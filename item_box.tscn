@@ -1,0 +1,32 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://item_box.gd" id="1_item"]
+[ext_resource type="AudioStream" path="res://assets/powerup.wav" id="2_som"]
+
+[sub_resource type="BoxMesh" id="Mesh_item"]
+size = Vector3(1.5, 1.5, 1.5)
+
+[sub_resource type="StandardMaterial3D" id="Mat_item"]
+albedo_color = Color(1.0, 0.78, 0.12, 1)
+emission_enabled = true
+emission = Color(1.0, 0.55, 0.0, 1)
+emission_energy_multiplier = 2.2
+metallic = 0.2
+roughness = 0.3
+
+[sub_resource type="BoxShape3D" id="Shape_item"]
+size = Vector3(1.9, 1.9, 1.9)
+
+[node name="ItemBox" type="Area3D"]
+script = ExtResource("1_item")
+
+[node name="Malha" type="MeshInstance3D" parent="."]
+mesh = SubResource("Mesh_item")
+material_override = SubResource("Mat_item")
+
+[node name="Forma" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_item")
+
+[node name="Som" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("2_som")
+volume_db = -3.0

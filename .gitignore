@@ -1,0 +1,5 @@
+# Godot 4+ — cache de importação e dados do editor (não versionar)
+.godot/
+
+# macOS
+.DS_Store

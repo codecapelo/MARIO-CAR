@@ -1,0 +1,230 @@
+[gd_scene load_steps=25 format=3]
+
+
+[sub_resource type="BoxMesh" id="Mesh_chassi"]
+size = Vector3(1.5, 0.3, 2.9)
+
+[sub_resource type="BoxMesh" id="Mesh_corpo"]
+size = Vector3(0.95, 0.42, 1.5)
+
+[sub_resource type="BoxMesh" id="Mesh_bico"]
+size = Vector3(0.66, 0.22, 0.9)
+
+[sub_resource type="BoxMesh" id="Mesh_asaf"]
+size = Vector3(1.6, 0.06, 0.34)
+
+[sub_resource type="BoxMesh" id="Mesh_asat"]
+size = Vector3(1.5, 0.08, 0.42)
+
+[sub_resource type="BoxMesh" id="Mesh_sup"]
+size = Vector3(0.08, 0.46, 0.12)
+
+[sub_resource type="BoxMesh" id="Mesh_pod"]
+size = Vector3(0.3, 0.3, 1.2)
+
+[sub_resource type="CylinderMesh" id="Mesh_escape"]
+top_radius = 0.07
+bottom_radius = 0.07
+height = 0.7
+
+[sub_resource type="CylinderMesh" id="Mesh_roda"]
+top_radius = 0.42
+bottom_radius = 0.42
+height = 0.4
+
+[sub_resource type="CylinderMesh" id="Mesh_aro"]
+top_radius = 0.22
+bottom_radius = 0.22
+height = 0.42
+
+[sub_resource type="CapsuleMesh" id="Mesh_torso"]
+radius = 0.27
+height = 0.78
+
+[sub_resource type="SphereMesh" id="Mesh_cabeca"]
+radius = 0.18
+height = 0.36
+
+[sub_resource type="SphereMesh" id="Mesh_capacete"]
+radius = 0.24
+height = 0.48
+
+[sub_resource type="BoxMesh" id="Mesh_visor"]
+size = Vector3(0.34, 0.13, 0.12)
+
+[sub_resource type="CapsuleMesh" id="Mesh_braco"]
+radius = 0.075
+height = 0.62
+
+[sub_resource type="TorusMesh" id="Mesh_volante"]
+inner_radius = 0.1
+outer_radius = 0.19
+
+[sub_resource type="StandardMaterial3D" id="Mat_corpo"]
+albedo_color = Color(0.16, 0.62, 0.2, 1)
+metallic = 0.35
+roughness = 0.35
+
+[sub_resource type="StandardMaterial3D" id="Mat_escuro"]
+albedo_color = Color(0.08, 0.08, 0.1, 1)
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_accent"]
+albedo_color = Color(0.95, 0.85, 0.25, 1)
+roughness = 0.4
+
+[sub_resource type="StandardMaterial3D" id="Mat_aro"]
+albedo_color = Color(0.7, 0.72, 0.78, 1)
+metallic = 0.8
+roughness = 0.3
+
+[sub_resource type="StandardMaterial3D" id="Mat_suit"]
+albedo_color = Color(0.1, 0.4, 0.15, 1)
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_pele"]
+albedo_color = Color(0.85, 0.66, 0.52, 1)
+roughness = 0.7
+
+[sub_resource type="StandardMaterial3D" id="Mat_capacete"]
+albedo_color = Color(0.95, 0.85, 0.2, 1)
+metallic = 0.2
+roughness = 0.3
+
+[sub_resource type="StandardMaterial3D" id="Mat_visor"]
+albedo_color = Color(0.05, 0.06, 0.09, 1)
+metallic = 0.6
+roughness = 0.1
+
+[node name="Kart" type="Node3D"]
+
+[node name="Chassi" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0, 0.32, 0)
+mesh = SubResource("Mesh_chassi")
+material_override = SubResource("Mat_corpo")
+
+[node name="Corpo" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0, 0.62, 0.15)
+mesh = SubResource("Mesh_corpo")
+material_override = SubResource("Mat_corpo")
+
+[node name="Bico" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0, 0.42, -1.5)
+mesh = SubResource("Mesh_bico")
+material_override = SubResource("Mat_accent")
+
+[node name="AsaFrente" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0, 0.34, -1.95)
+mesh = SubResource("Mesh_asaf")
+material_override = SubResource("Mat_accent")
+
+[node name="AsaTras" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0, 1.02, 1.35)
+mesh = SubResource("Mesh_asat")
+material_override = SubResource("Mat_corpo")
+
+[node name="SupTrasE" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -0.55, 0.78, 1.35)
+mesh = SubResource("Mesh_sup")
+material_override = SubResource("Mat_escuro")
+
+[node name="SupTrasD" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.55, 0.78, 1.35)
+mesh = SubResource("Mesh_sup")
+material_override = SubResource("Mat_escuro")
+
+[node name="PodE" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -0.72, 0.42, 0.15)
+mesh = SubResource("Mesh_pod")
+material_override = SubResource("Mat_corpo")
+
+[node name="PodD" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.72, 0.42, 0.15)
+mesh = SubResource("Mesh_pod")
+material_override = SubResource("Mat_corpo")
+
+[node name="EscapeE" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0, -0.16, 0.6, 1.45)
+mesh = SubResource("Mesh_escape")
+material_override = SubResource("Mat_escuro")
+
+[node name="EscapeD" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0, 0.16, 0.6, 1.45)
+mesh = SubResource("Mesh_escape")
+material_override = SubResource("Mat_escuro")
+
+[node name="RodaFE" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, -0.82, 0.42, -0.95)
+mesh = SubResource("Mesh_roda")
+material_override = SubResource("Mat_escuro")
+
+[node name="RodaFD" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.82, 0.42, -0.95)
+mesh = SubResource("Mesh_roda")
+material_override = SubResource("Mat_escuro")
+
+[node name="RodaTE" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, -0.82, 0.42, 0.95)
+mesh = SubResource("Mesh_roda")
+material_override = SubResource("Mat_escuro")
+
+[node name="RodaTD" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.82, 0.42, 0.95)
+mesh = SubResource("Mesh_roda")
+material_override = SubResource("Mat_escuro")
+
+[node name="AroFE" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, -0.82, 0.42, -0.95)
+mesh = SubResource("Mesh_aro")
+material_override = SubResource("Mat_aro")
+
+[node name="AroFD" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.82, 0.42, -0.95)
+mesh = SubResource("Mesh_aro")
+material_override = SubResource("Mat_aro")
+
+[node name="AroTE" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, -0.82, 0.42, 0.95)
+mesh = SubResource("Mesh_aro")
+material_override = SubResource("Mat_aro")
+
+[node name="AroTD" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.82, 0.42, 0.95)
+mesh = SubResource("Mesh_aro")
+material_override = SubResource("Mat_aro")
+
+[node name="Torso" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0, 0.98, 0.28)
+mesh = SubResource("Mesh_torso")
+material_override = SubResource("Mat_suit")
+
+[node name="Cabeca" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0, 1.42, 0.18)
+mesh = SubResource("Mesh_cabeca")
+material_override = SubResource("Mat_pele")
+
+[node name="Capacete" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0, 1.45, 0.16)
+mesh = SubResource("Mesh_capacete")
+material_override = SubResource("Mat_capacete")
+
+[node name="Visor" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0, 1.45, -0.05)
+mesh = SubResource("Mesh_visor")
+material_override = SubResource("Mat_visor")
+
+[node name="BracoE" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.0, 0.0, -1.0, 0.9119, -0.4104, 0.0, -0.4104, -0.9119, -0.0, -0.26, 1.02, -0.05)
+mesh = SubResource("Mesh_braco")
+material_override = SubResource("Mat_suit")
+
+[node name="BracoD" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.0, 0.0, -1.0, 0.9119, -0.4104, 0.0, -0.4104, -0.9119, -0.0, 0.26, 1.02, -0.05)
+mesh = SubResource("Mesh_braco")
+material_override = SubResource("Mat_suit")
+
+[node name="Volante" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0, 0, 0.92, -0.42)
+mesh = SubResource("Mesh_volante")
+material_override = SubResource("Mat_escuro")
+
