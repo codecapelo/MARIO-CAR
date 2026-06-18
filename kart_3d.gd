@@ -18,11 +18,11 @@ extends CharacterBody3D
 # ============================================================
 
 # --- velocidades e aceleração ---
-@export var velocidade_maxima: float = 24.0
-@export var velocidade_maxima_re: float = 9.0
-@export var aceleracao: float = 22.0
+@export var velocidade_maxima: float = 34.0
+@export var velocidade_maxima_re: float = 11.0
+@export var aceleracao: float = 26.0
 @export var atrito: float = 10.0
-@export var boost_extra: float = 16.0
+@export var boost_extra: float = 24.0
 
 # --- direção ---
 @export var velocidade_giro: float = 2.4
@@ -48,6 +48,8 @@ extends CharacterBody3D
 var velocidade_atual: float = 0.0
 var travado: bool = true
 var boost_timer: float = 0.0
+var estrela_timer: float = 0.0   # tempo restante de "estrela" (super poder)
+var _estrela_extra: float = 0.0  # velocidade extra que a estrela concede
 var driftando: bool = false
 var drift_sentido: float = 0.0   # -1 esquerda, +1 direita (travado ao iniciar)
 var drift_carga: float = 0.0     # segundos acumulados derrapando
@@ -92,7 +94,12 @@ func _ready() -> void:
 
 
 func _teto() -> float:
-	return velocidade_maxima + (boost_extra if boost_timer > 0.0 else 0.0)
+	var teto := velocidade_maxima
+	if boost_timer > 0.0:
+		teto += boost_extra
+	if estrela_timer > 0.0:
+		teto += _estrela_extra
+	return teto
 
 
 func _physics_process(delta: float) -> void:
@@ -109,6 +116,11 @@ func _physics_process(delta: float) -> void:
 	_mover(delta)
 	if boost_timer > 0.0:
 		boost_timer -= delta
+	if estrela_timer > 0.0:
+		estrela_timer -= delta
+		boost_timer = maxf(boost_timer, 0.2)   # mantém o turbo aceso durante a estrela
+		if estrela_timer <= 0.0:
+			_estrela_extra = 0.0
 	_atualizar_motor()
 	_atualizar_visual(delta)
 	_atualizar_vfx()
@@ -271,6 +283,8 @@ func _respawn() -> void:
 	velocity = Vector3.ZERO
 	velocidade_atual = 0.0
 	boost_timer = 0.0
+	estrela_timer = 0.0
+	_estrela_extra = 0.0
 	driftando = false
 	drift_carga = 0.0
 	if som_drift:
@@ -293,6 +307,34 @@ func aplicar_boost(duracao: float = 2.0) -> void:
 	if som_boost:
 		som_boost.play()
 	_tremer_camera(0.3)
+
+
+# Chamado pela caixa de item. Cada "tipo" dá um poder diferente.
+func pegar_item(tipo: String) -> void:
+	match tipo:
+		"estrela":
+			ativar_estrela(6.0)
+		"raio":
+			disparar_raio()
+		_:
+			aplicar_boost(2.0)   # turbo comum
+
+
+# ESTRELA: um super-turbo — anda MUITO mais rápido e por mais tempo.
+func ativar_estrela(duracao: float) -> void:
+	estrela_timer = maxf(estrela_timer, duracao)
+	_estrela_extra = 16.0
+	aplicar_boost(duracao)
+
+
+# RAIO: deixa todos os rivais lentos por alguns segundos (vantagem na corrida).
+func disparar_raio() -> void:
+	for r in get_tree().get_nodes_in_group("rivais"):
+		if r.has_method("levar_raio"):
+			r.levar_raio(3.5)
+	if som_boost:
+		som_boost.play()
+	_tremer_camera(0.35)
 
 
 func _tremer_camera(intensidade: float) -> void:

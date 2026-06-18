@@ -18,11 +18,11 @@ extends CharacterBody3D
 #  O rival só anda depois da largada (Jogo.estado == CORRENDO).
 # ============================================================
 
-@export var velocidade_base: float = 18.0   # metros por segundo (ritmo natural)
+@export var velocidade_base: float = 23.0   # metros por segundo (ritmo natural)
 @export var offset_lateral: float = 4.5      # quanto fica para o lado da pista
-@export var ganho_borracha: float = 0.06     # quão forte reage à distância
-@export var vel_min: float = 13.0            # nunca anda mais devagar que isso
-@export var vel_max: float = 25.0            # nem mais rápido que isso
+@export var ganho_borracha: float = 0.08     # quão forte reage à distância
+@export var vel_min: float = 17.0            # nunca anda mais devagar que isso
+@export var vel_max: float = 34.0            # nem mais rápido que isso
 @export var indice: int = 1                  # número do rival (1, 2, 3...)
 @export var cor: Color = Color(0.16, 0.62, 0.2, 1)  # cor do corpo do rival
 
@@ -38,6 +38,7 @@ var curva: Curve3D
 var no_path: Node3D
 var pista: Node                              # o gerente da corrida (grupo "pista")
 var dist: float = 0.0                        # distância já percorrida na curva
+var _raio_timer: float = 0.0                 # tempo restante "lento" por causa do raio
 
 @onready var motor: AudioStreamPlayer3D = get_node_or_null("MotorNPC")
 var _rodas: Array = []
@@ -85,6 +86,9 @@ func _physics_process(delta: float) -> void:
 	var vel := velocidade_base
 	if correndo:
 		vel = _velocidade_com_elastico()
+		if _raio_timer > 0.0:
+			_raio_timer -= delta
+			vel *= 0.35              # atingido pelo raio: fica bem lento
 		dist = fmod(dist + vel * delta, comprimento)
 		_girar_rodas(vel, delta)
 
@@ -107,6 +111,11 @@ func _velocidade_com_elastico() -> float:
 	var jog: float = pista.progresso_jogador()
 	var diferenca := jog - meu          # positivo = estou atrás do jogador
 	return clampf(velocidade_base + diferenca * ganho_borracha, vel_min, vel_max)
+
+
+# Atingido pelo raio do jogador: fica lento por um tempo.
+func levar_raio(duracao: float) -> void:
+	_raio_timer = maxf(_raio_timer, duracao)
 
 
 # Anda em direção ao ponto ideal na pista, deixando o move_and_slide() resolver

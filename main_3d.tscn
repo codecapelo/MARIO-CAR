@@ -182,7 +182,7 @@ autoplay = true
 bus = "Musica"
 
 [node name="Kart" parent="." instance=ExtResource("1_kart")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -8, 0.9, 52)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -8, 0.9, 52)
 
 [node name="Camera3D" type="Camera3D" parent="Kart"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.8, 6.5)
@@ -333,7 +333,7 @@ bus = "SFX"
 [node name="Rival1" parent="." instance=ExtResource("6_npc")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, 54)
 script = ExtResource("11_npc")
-velocidade_base = 18.5
+velocidade_base = 25.0
 offset_lateral = -6.0
 indice = 1
 cor = Color(0.2, 0.4, 0.85, 1)
@@ -341,7 +341,7 @@ cor = Color(0.2, 0.4, 0.85, 1)
 [node name="Rival2" parent="." instance=ExtResource("6_npc")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, 51)
 script = ExtResource("11_npc")
-velocidade_base = 17.5
+velocidade_base = 24.0
 offset_lateral = -3.0
 indice = 2
 cor = Color(0.9, 0.55, 0.15, 1)
@@ -349,7 +349,7 @@ cor = Color(0.9, 0.55, 0.15, 1)
 [node name="Rival3" parent="." instance=ExtResource("6_npc")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, 45)
 script = ExtResource("11_npc")
-velocidade_base = 18.0
+velocidade_base = 24.5
 offset_lateral = 3.0
 indice = 3
 cor = Color(0.16, 0.62, 0.2, 1)
@@ -357,7 +357,7 @@ cor = Color(0.16, 0.62, 0.2, 1)
 [node name="Rival4" parent="." instance=ExtResource("6_npc")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, 42)
 script = ExtResource("11_npc")
-velocidade_base = 17.0
+velocidade_base = 23.5
 offset_lateral = 6.0
 indice = 4
 cor = Color(0.7, 0.25, 0.75, 1)
@@ -464,26 +464,32 @@ material_override = SubResource("Mat_vermelho")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 95, 1.4, 52)
 [node name="Item2" parent="Itens" instance=ExtResource("12_item")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 105, 1.4, 48)
+tipo = "estrela"
 [node name="Item3" parent="Itens" instance=ExtResource("12_item")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 115, 1.4, 44)
 [node name="Item4" parent="Itens" instance=ExtResource("12_item")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 95, 1.4, -44)
+tipo = "raio"
 [node name="Item5" parent="Itens" instance=ExtResource("12_item")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 105, 1.4, -48)
 [node name="Item6" parent="Itens" instance=ExtResource("12_item")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 115, 1.4, -52)
+tipo = "estrela"
 [node name="Item7" parent="Itens" instance=ExtResource("12_item")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -90, 1.4, -52)
 [node name="Item8" parent="Itens" instance=ExtResource("12_item")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -100, 1.4, -48)
+tipo = "raio"
 [node name="Item9" parent="Itens" instance=ExtResource("12_item")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -110, 1.4, -44)
 [node name="Item10" parent="Itens" instance=ExtResource("12_item")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -90, 1.4, 44)
+tipo = "estrela"
 [node name="Item11" parent="Itens" instance=ExtResource("12_item")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -100, 1.4, 48)
 [node name="Item12" parent="Itens" instance=ExtResource("12_item")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -110, 1.4, 52)
+tipo = "raio"
 
 [node name="Mont1" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(1.35, 0, 0, 0, 1.35, 0, 0, 0, 1.35, -340.0, 94.625, -150.0)
