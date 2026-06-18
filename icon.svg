@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="20" fill="#1c2b4a"/>
+  <rect x="14" y="14" width="100" height="100" rx="16" fill="#2a6cc4"/>
+  <!-- pista -->
+  <ellipse cx="64" cy="78" rx="44" ry="16" fill="#6b6f76"/>
+  <ellipse cx="64" cy="78" rx="44" ry="16" fill="none" stroke="#e8e8e8" stroke-width="2" stroke-dasharray="6 6"/>
+  <!-- kart -->
+  <g>
+    <rect x="46" y="50" width="36" height="16" rx="5" fill="#c81f17"/>
+    <rect x="52" y="40" width="20" height="14" rx="5" fill="#e23b30"/>
+    <rect x="40" y="44" width="10" height="6" rx="2" fill="#f4cf3a"/>
+    <circle cx="50" cy="68" r="8" fill="#14161c"/>
+    <circle cx="78" cy="68" r="8" fill="#14161c"/>
+    <circle cx="50" cy="68" r="3.5" fill="#b9bcc4"/>
+    <circle cx="78" cy="68" r="3.5" fill="#b9bcc4"/>
+  </g>
+</svg>

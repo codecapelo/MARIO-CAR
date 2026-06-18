@@ -1,4 +1,4 @@
-[gd_scene load_steps=39 format=3]
+[gd_scene load_steps=38 format=3]
 
 [ext_resource type="PackedScene" path="res://kart_3d.tscn" id="1_kart"]
 [ext_resource type="Script" path="res://camera_perseguidora.gd" id="2_cam"]
@@ -6,7 +6,6 @@
 [ext_resource type="Texture2D" path="res://assets/sky.png" id="4_sky"]
 [ext_resource type="Texture2D" path="res://assets/road_stone.png" id="5_pedra"]
 [ext_resource type="PackedScene" path="res://kart_npc.tscn" id="6_npc"]
-[ext_resource type="Script" path="res://corrida.gd" id="7_corrida"]
 [ext_resource type="Texture2D" path="res://assets/checker.png" id="8_checker"]
 [ext_resource type="Script" path="res://hud.gd" id="9_hud"]
 [ext_resource type="Shader" path="res://mountain.gdshader" id="10_mont"]
@@ -15,6 +14,10 @@
 [ext_resource type="AudioStream" path="res://assets/beep.wav" id="13_beep"]
 [ext_resource type="AudioStream" path="res://assets/go.wav" id="14_go"]
 [ext_resource type="Texture2D" path="res://assets/water_normal.png" id="15_wnormal"]
+[ext_resource type="Script" path="res://pista.gd" id="16_pista"]
+[ext_resource type="AudioStream" path="res://assets/musica_corrida.wav" id="17_musica"]
+[ext_resource type="Script" path="res://minimapa.gd" id="18_mini"]
+[ext_resource type="Theme" path="res://tema.tres" id="19_tema"]
 
 [sub_resource type="PanoramaSkyMaterial" id="Sky_mat"]
 panorama = ExtResource("4_sky")
@@ -31,7 +34,22 @@ ambient_light_energy = 0.65
 reflected_light_source = 2
 tonemap_mode = 3
 tonemap_exposure = 1.05
+ssao_enabled = true
+ssao_radius = 1.5
+ssao_intensity = 2.0
+ssao_power = 1.5
 glow_enabled = true
+glow_intensity = 0.5
+glow_bloom = 0.1
+glow_hdr_threshold = 0.95
+glow_blend_mode = 1
+fog_enabled = true
+fog_mode = 1
+fog_light_color = Color(0.7, 0.8, 0.9, 1)
+fog_sun_scatter = 0.2
+fog_density = 0.0008
+fog_sky_affect = 0.0
+fog_aerial_perspective = 0.3
 
 [sub_resource type="ShaderMaterial" id="Water_mat"]
 shader = ExtResource("3_agua")
@@ -54,10 +72,6 @@ albedo_color = Color(0.74, 0.12, 0.1, 1)
 metallic = 0.2
 roughness = 0.55
 
-[sub_resource type="StandardMaterial3D" id="Mat_cabo"]
-albedo_color = Color(0.86, 0.86, 0.83, 1)
-roughness = 0.6
-
 [sub_resource type="ShaderMaterial" id="Mat_montanha"]
 shader = ExtResource("10_mont")
 
@@ -72,11 +86,6 @@ size = Vector3(1.0, 10.0, 1.2)
 [sub_resource type="BoxMesh" id="Mesh_viga"]
 size = Vector3(20.0, 1.4, 1.2)
 
-[sub_resource type="CylinderMesh" id="Mesh_cabo"]
-top_radius = 0.08
-bottom_radius = 0.08
-height = 1.0
-
 [sub_resource type="CylinderMesh" id="Mesh_montanha"]
 top_radius = 0.0
 bottom_radius = 92.0
@@ -88,18 +97,12 @@ rings = 14
 radius = 5.0
 height = 30.0
 
-[sub_resource type="BoxMesh" id="Mesh_fin"]
-size = Vector3(6.0, 0.4, 4.0)
-
 [sub_resource type="StandardMaterial3D" id="Mat_checker"]
 albedo_texture = ExtResource("8_checker")
 roughness = 0.7
 
 [sub_resource type="BoxMesh" id="Mesh_finish"]
 size = Vector3(16.0, 0.08, 3.0)
-
-[sub_resource type="BoxShape3D" id="Shape_linha"]
-size = Vector3(16.0, 4.0, 2.0)
 
 [sub_resource type="BoxMesh" id="Mesh_braco"]
 size = Vector3(1.0, 0.35, 0.35)
@@ -119,6 +122,7 @@ _data = {
 
 
 [node name="Main" type="Node3D"]
+script = ExtResource("16_pista")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Env_1")
@@ -126,8 +130,14 @@ environment = SubResource("Env_1")
 [node name="Sol" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.7894, -0.5041, 0.3505, 0.0, 0.5708, 0.8211, -0.6139, -0.6481, 0.4506, 0.0, 80.0, 0.0)
 shadow_enabled = true
+shadow_blur = 1.0
 light_energy = 2.1
 light_color = Color(1.0, 0.97, 0.9, 1)
+directional_shadow_mode = 2
+directional_shadow_max_distance = 220.0
+directional_shadow_split_1 = 0.1
+directional_shadow_split_2 = 0.2
+directional_shadow_split_3 = 0.5
 
 [node name="Oceano" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -8, 0)
@@ -154,15 +164,6 @@ transform = Transform3D(-0.918, 0.0, -0.3965, 0.0, 1.0, -0.0, 0.3965, -0.0, -0.9
 mesh = SubResource("Mesh_finish")
 material_override = SubResource("Mat_checker")
 
-[node name="LinhaChegada" type="Area3D" parent="."]
-transform = Transform3D(-0.918, 0.0, -0.3965, 0.0, 1.0, -0.0, 0.3965, -0.0, -0.918, 133.8368, 0.0, 0.0)
-script = ExtResource("7_corrida")
-label_path = NodePath("../HUD/Tempo")
-
-[node name="Forma" type="CollisionShape3D" parent="LinhaChegada"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
-shape = SubResource("Shape_linha")
-
 [node name="Rampa" type="StaticBody3D" parent="."]
 
 [node name="RampaMesh" type="MeshInstance3D" parent="Rampa"]
@@ -185,11 +186,11 @@ transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 140.0, 78.0, -40.0)
 mesh = SubResource("Mesh_blimp")
 material_override = SubResource("Mat_blimp")
 
-[node name="KartNPC" parent="." instance=ExtResource("6_npc")]
-transform = Transform3D(-0.918, 0.0, -0.3965, 0.0, 1.0, -0.0, 0.3965, -0.0, -0.918, 137.509, 0.0, -1.5859)
-script = ExtResource("11_npc")
-velocidade = 18.0
-offset_lateral = 4.5
+[node name="Musica" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("17_musica")
+volume_db = -8.0
+autoplay = true
+bus = "Musica"
 
 [node name="Kart" parent="." instance=ExtResource("1_kart")]
 transform = Transform3D(-0.918, 0.0, -0.3965, 0.0, 1.0, -0.0, 0.3965, -0.0, -0.918, 133.8368, 0.9, 0.0)
@@ -199,10 +200,16 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.8, 6.5)
 script = ExtResource("2_cam")
 
 [node name="HUD" type="CanvasLayer" parent="."]
+process_mode = 3
 script = ExtResource("9_hud")
 kart_path = NodePath("../Kart")
 label_velocidade_path = NodePath("Velocidade")
 label_largada_path = NodePath("Largada")
+label_tempo_path = NodePath("Tempo")
+label_voltas_path = NodePath("Voltas")
+label_posicao_path = NodePath("Posicao")
+barra_boost_path = NodePath("BarraBoost")
+menu_pausa_path = NodePath("MenuPausa")
 beep_path = NodePath("Beep")
 go_path = NodePath("Go")
 
@@ -210,24 +217,51 @@ go_path = NodePath("Go")
 offset_left = 22.0
 offset_top = 16.0
 offset_right = 430.0
-offset_bottom = 150.0
+offset_bottom = 110.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
-theme_override_font_sizes/font_size = 30
-text = "Volta: 0
-Tempo: 0.00 s"
+theme_override_font_sizes/font_size = 28
+text = "Volta: 0.00 s"
 
 [node name="Velocidade" type="Label" parent="HUD"]
 offset_left = 22.0
-offset_top = 150.0
+offset_top = 110.0
 offset_right = 430.0
-offset_bottom = 230.0
+offset_bottom = 190.0
 theme_override_colors/font_color = Color(1, 0.95, 0.6, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 42
 text = "0 km/h"
+
+[node name="Voltas" type="Label" parent="HUD"]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -300.0
+offset_top = 16.0
+offset_right = -22.0
+offset_bottom = 60.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 34
+horizontal_alignment = 2
+text = "Volta 1/3"
+
+[node name="Posicao" type="Label" parent="HUD"]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -300.0
+offset_top = 60.0
+offset_right = -22.0
+offset_bottom = 140.0
+theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 56
+horizontal_alignment = 2
+text = "1º/5"
 
 [node name="Largada" type="Label" parent="HUD"]
 anchor_right = 1.0
@@ -240,12 +274,105 @@ theme_override_constants/outline_size = 12
 theme_override_font_sizes/font_size = 130
 text = "3"
 
+[node name="BarraBoost" type="ProgressBar" parent="HUD"]
+visible = false
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -130.0
+offset_top = -54.0
+offset_right = 130.0
+offset_bottom = -30.0
+max_value = 2.0
+show_percentage = false
+
+[node name="Minimapa" type="Control" parent="HUD"]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -216.0
+offset_top = -216.0
+offset_right = -16.0
+offset_bottom = -16.0
+script = ExtResource("18_mini")
+path_node = NodePath("../../TrackPath")
+kart_path = NodePath("../../Kart")
+
+[node name="MenuPausa" type="PanelContainer" parent="HUD"]
+visible = false
+theme = ExtResource("19_tema")
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -160.0
+offset_right = 180.0
+offset_bottom = 160.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Caixa" type="VBoxContainer" parent="HUD/MenuPausa"]
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="TituloPausa" type="Label" parent="HUD/MenuPausa/Caixa"]
+theme_override_font_sizes/font_size = 44
+horizontal_alignment = 1
+text = "PAUSA"
+
+[node name="Continuar" type="Button" parent="HUD/MenuPausa/Caixa"]
+text = "Continuar"
+
+[node name="Reiniciar" type="Button" parent="HUD/MenuPausa/Caixa"]
+text = "Reiniciar"
+
+[node name="Menu" type="Button" parent="HUD/MenuPausa/Caixa"]
+text = "Menu"
+
 [node name="Beep" type="AudioStreamPlayer" parent="HUD"]
 stream = ExtResource("13_beep")
+bus = "SFX"
 
 [node name="Go" type="AudioStreamPlayer" parent="HUD"]
 stream = ExtResource("14_go")
 volume_db = -2.0
+bus = "SFX"
+
+[node name="Rival1" parent="." instance=ExtResource("6_npc")]
+transform = Transform3D(-0.918, 0.0, -0.3965, 0.0, 1.0, -0.0, 0.3965, -0.0, -0.918, 128.3285, 0.0, 2.3788)
+script = ExtResource("11_npc")
+velocidade_base = 18.5
+offset_lateral = -6.0
+indice = 1
+cor = Color(0.2, 0.4, 0.85, 1)
+
+[node name="Rival2" parent="." instance=ExtResource("6_npc")]
+transform = Transform3D(-0.918, 0.0, -0.3965, 0.0, 1.0, -0.0, 0.3965, -0.0, -0.918, 131.0827, 0.0, 1.1894)
+script = ExtResource("11_npc")
+velocidade_base = 17.5
+offset_lateral = -3.0
+indice = 2
+cor = Color(0.9, 0.55, 0.15, 1)
+
+[node name="Rival3" parent="." instance=ExtResource("6_npc")]
+transform = Transform3D(-0.918, 0.0, -0.3965, 0.0, 1.0, -0.0, 0.3965, -0.0, -0.918, 136.5909, 0.0, -1.1894)
+script = ExtResource("11_npc")
+velocidade_base = 18.0
+offset_lateral = 3.0
+indice = 3
+cor = Color(0.16, 0.62, 0.2, 1)
+
+[node name="Rival4" parent="." instance=ExtResource("6_npc")]
+transform = Transform3D(-0.918, 0.0, -0.3965, 0.0, 1.0, -0.0, 0.3965, -0.0, -0.918, 139.3451, 0.0, -2.3788)
+script = ExtResource("11_npc")
+velocidade_base = 17.0
+offset_lateral = 6.0
+indice = 4
+cor = Color(0.7, 0.25, 0.75, 1)
+
 
 [node name="Torre0" type="Node3D" parent="Torres"]
 transform = Transform3D(-0.918, 0.0, -0.3965, 0.0, 1.0, -0.0, 0.3965, -0.0, -0.918, 133.8368, 0.0, 0.0)
@@ -368,7 +495,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 137.6522, 1.4, 39.2956)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 140.5759, 1.4, 41.2197)
 [node name="Item12" parent="Itens" instance=ExtResource("12_item")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 143.4996, 1.4, 43.1437)
-
 
 [node name="Mont1" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(1.35, 0, 0, 0, 1.35, 0, 0, 0, 1.35, -340.0, 94.625, -150.0)

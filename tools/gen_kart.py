@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
-# Gera kart_3d.tscn (jogador, vermelho) e kart_npc.tscn (rival, verde),
-# refinados: chassi, bico, asas, sidepods, escapes, rodas com aro,
-# e piloto detalhado (torso, capacete com viseira, braços, volante).
-import math
+# Gera kart_3d.tscn (jogador, vermelho) e kart_npc.tscn (rival).
+# Cada kart tem:
+#   - um nó "Visual" que embrulha TODA a malha (assim o script pode
+#     inclinar/achatar o visual sem mexer na física nem no raycast);
+#   - rodas que o script faz girar;
+#   - (jogador) partículas de turbo/fumaça/poeira e sons de boost/drift;
+#   - (rival) um motor com áudio espacial 3D.
+import math, os, re
+
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def norm(a):
     m = math.sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2])
@@ -58,7 +64,7 @@ def build(cor_corpo, cor_accent, cor_suit, cor_capacete, com_script):
         "Mat_capacete": (cor_capacete, "metallic = 0.2\nroughness = 0.3"),
         "Mat_visor": ("Color(0.05, 0.06, 0.09, 1)", "metallic = 0.6\nroughness = 0.1"),
     }
-    # (nome, mesh, material, cols, pos)
+    # (nome, mesh, material, cols, pos) — todas as malhas ficam dentro de "Visual"
     P = [
         ("Chassi", "Mesh_chassi", "Mat_corpo", I, (0, 0.32, 0)),
         ("Corpo", "Mesh_corpo", "Mat_corpo", I, (0, 0.62, 0.15)),
@@ -88,50 +94,103 @@ def build(cor_corpo, cor_accent, cor_suit, cor_capacete, com_script):
         ("Volante", "Mesh_volante", "Mat_escuro", ALONGZ, (0, 0.92, -0.42)),
     ]
 
-    # contar load_steps
-    n_sub = len(meshes) + len(mats)
-    n_ext = 0
-    if com_script:
-        n_sub += 1  # Shape_corpo
-        n_ext += 2  # script + motor
-    load_steps = n_sub + n_ext + 1
-
-    out = "[gd_scene load_steps=%d format=3]\n\n" % load_steps
+    out = "[gd_scene load_steps=2 format=3]\n\n"  # load_steps é recontado no fim
     if com_script:
         out += '[ext_resource type="Script" path="res://kart_3d.gd" id="1_kart"]\n'
+        out += '[ext_resource type="AudioStream" path="res://assets/engine.wav" id="2_motor"]\n'
+        out += '[ext_resource type="AudioStream" path="res://assets/whoosh.wav" id="3_whoosh"]\n'
+        out += '[ext_resource type="AudioStream" path="res://assets/drift.wav" id="4_drift"]\n'
+    else:
         out += '[ext_resource type="AudioStream" path="res://assets/engine.wav" id="2_motor"]\n'
     out += "\n"
     for k, (typ, body) in meshes.items():
         out += '[sub_resource type="%s" id="%s"]\n%s\n\n' % (typ, k, body)
     for k, (cor, extra) in mats.items():
         out += '[sub_resource type="StandardMaterial3D" id="%s"]\nalbedo_color = %s\n%s\n\n' % (k, cor, extra)
+
     if com_script:
         out += '[sub_resource type="BoxShape3D" id="Shape_corpo"]\nsize = Vector3(1.5, 0.9, 2.9)\n\n'
+        # material das partículas: sem sombra, usa a cor da partícula
+        out += ('[sub_resource type="StandardMaterial3D" id="Mat_part"]\n'
+                'shading_mode = 0\nvertex_color_use_as_albedo = true\n'
+                'transparency = 1\nalbedo_color = Color(1, 1, 1, 1)\n\n')
+        out += ('[sub_resource type="SphereMesh" id="PMesh_part"]\n'
+                'radius = 0.12\nheight = 0.24\nmaterial = SubResource("Mat_part")\n\n')
+        out += ('[sub_resource type="ParticleProcessMaterial" id="PM_turbo"]\n'
+                'direction = Vector3(0, 0, 1)\nspread = 22.0\n'
+                'initial_velocity_min = 7.0\ninitial_velocity_max = 13.0\n'
+                'gravity = Vector3(0, 0, 0)\nscale_min = 0.35\nscale_max = 0.85\n'
+                'color = Color(1, 0.6, 0.1, 1)\n\n')
+        out += ('[sub_resource type="ParticleProcessMaterial" id="PM_fumaca"]\n'
+                'direction = Vector3(0, 1, 0.5)\nspread = 25.0\n'
+                'initial_velocity_min = 1.0\ninitial_velocity_max = 2.5\n'
+                'gravity = Vector3(0, 1.5, 0)\nscale_min = 0.25\nscale_max = 0.6\n'
+                'color = Color(0.7, 0.7, 0.7, 0.45)\n\n')
+        out += ('[sub_resource type="ParticleProcessMaterial" id="PM_poeira"]\n'
+                'direction = Vector3(0, 1, 0)\nspread = 60.0\n'
+                'initial_velocity_min = 2.0\ninitial_velocity_max = 5.0\n'
+                'gravity = Vector3(0, -4, 0)\nscale_min = 0.2\nscale_max = 0.5\n'
+                'color = Color(0.9, 0.9, 0.9, 0.8)\n\n')
 
     root = "CharacterBody3D" if com_script else "Node3D"
     out += '[node name="Kart" type="%s"]\n' % root
     if com_script:
         out += 'script = ExtResource("1_kart")\n'
     out += "\n"
+
+    # Nó "Visual": embrulha toda a malha (a física fica no nó raiz).
+    out += '[node name="Visual" type="Node3D" parent="."]\n\n'
     for (nome, mesh, mat, cols, pos) in P:
-        out += '[node name="%s" type="MeshInstance3D" parent="."]\n' % nome
+        out += '[node name="%s" type="MeshInstance3D" parent="Visual"]\n' % nome
         out += 'transform = %s\n' % xf(cols, pos)
         out += 'mesh = SubResource("%s")\n' % mesh
         out += 'material_override = SubResource("%s")\n\n' % mat
+
     if com_script:
         out += '[node name="Colisao" type="CollisionShape3D" parent="."]\n'
         out += 'transform = %s\n' % xf(I, (0, 0.45, 0))
         out += 'shape = SubResource("Shape_corpo")\n\n'
         out += '[node name="Motor" type="AudioStreamPlayer" parent="."]\n'
-        out += 'stream = ExtResource("2_motor")\nvolume_db = -13.0\n'
+        out += 'stream = ExtResource("2_motor")\nvolume_db = -13.0\nbus = "SFX"\n\n'
+        out += '[node name="SomBoost" type="AudioStreamPlayer" parent="."]\n'
+        out += 'stream = ExtResource("3_whoosh")\nvolume_db = -3.0\nbus = "SFX"\n\n'
+        out += '[node name="SomDrift" type="AudioStreamPlayer" parent="."]\n'
+        out += 'stream = ExtResource("4_drift")\nvolume_db = -8.0\nbus = "SFX"\n\n'
+        # partículas (ficam no nó raiz, não no Visual, para não herdar o roll)
+        for lado, px in (("E", -0.16), ("D", 0.16)):
+            out += '[node name="Turbo%s" type="GPUParticles3D" parent="."]\n' % lado
+            out += 'transform = %s\n' % xf(I, (px, 0.6, 1.75))
+            out += ('emitting = false\namount = 40\nlifetime = 0.5\nlocal_coords = false\n'
+                    'process_material = SubResource("PM_turbo")\n'
+                    'draw_pass_1 = SubResource("PMesh_part")\n\n')
+        out += '[node name="Fumaca" type="GPUParticles3D" parent="."]\n'
+        out += 'transform = %s\n' % xf(I, (0, 0.7, 1.6))
+        out += ('amount = 16\nlifetime = 1.2\nlocal_coords = false\n'
+                'process_material = SubResource("PM_fumaca")\n'
+                'draw_pass_1 = SubResource("PMesh_part")\n\n')
+        out += '[node name="Poeira" type="GPUParticles3D" parent="."]\n'
+        out += 'transform = %s\n' % xf(I, (0, 0.25, 0.95))
+        out += ('emitting = false\namount = 24\nlifetime = 0.5\nlocal_coords = false\n'
+                'process_material = SubResource("PM_poeira")\n'
+                'draw_pass_1 = SubResource("PMesh_part")\n\n')
+    else:
+        # Rival: motor com áudio espacial 3D (o npc.gd controla pitch/play).
+        out += '[node name="MotorNPC" type="AudioStreamPlayer3D" parent="."]\n'
+        out += ('stream = ExtResource("2_motor")\nvolume_db = -12.0\nbus = "SFX"\n'
+                'unit_size = 8.0\nmax_distance = 60.0\n\n')
+
+    # Reconta load_steps (nº de recursos + 1) para nunca dar erro ao abrir.
+    n = out.count("[ext_resource") + out.count("[sub_resource")
+    out = re.sub(r"load_steps=\d+", "load_steps=%d" % (n + 1), out, count=1)
     return out
 
+
 # jogador (vermelho, capacete azul)
-open("/Users/test/Aplicativos_raul/mariocard/kart_3d.tscn", "w").write(
+open(os.path.join(RAIZ, "kart_3d.tscn"), "w").write(
     build("Color(0.85, 0.13, 0.11, 1)", "Color(0.95, 0.8, 0.2, 1)",
           "Color(0.15, 0.32, 0.78, 1)", "Color(0.9, 0.92, 0.95, 1)", True))
-# rival (verde, capacete amarelo)
-open("/Users/test/Aplicativos_raul/mariocard/kart_npc.tscn", "w").write(
+# rival base (verde, capacete amarelo) — a cor de cada rival é trocada em runtime
+open(os.path.join(RAIZ, "kart_npc.tscn"), "w").write(
     build("Color(0.16, 0.62, 0.2, 1)", "Color(0.95, 0.85, 0.25, 1)",
           "Color(0.1, 0.4, 0.15, 1)", "Color(0.95, 0.85, 0.2, 1)", False))
-print("kart_3d.tscn e kart_npc.tscn gerados (refinados).")
+print("kart_3d.tscn e kart_npc.tscn gerados (Visual + partículas + sons).")

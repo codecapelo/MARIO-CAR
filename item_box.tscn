@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://item_box.gd" id="1_item"]
 [ext_resource type="AudioStream" path="res://assets/powerup.wav" id="2_som"]
@@ -17,6 +17,20 @@ roughness = 0.3
 [sub_resource type="BoxShape3D" id="Shape_item"]
 size = Vector3(1.9, 1.9, 1.9)
 
+[sub_resource type="SphereMesh" id="PMesh_brilho"]
+radius = 0.12
+height = 0.24
+
+[sub_resource type="ParticleProcessMaterial" id="PM_brilho"]
+direction = Vector3(0, 1, 0)
+spread = 90.0
+initial_velocity_min = 3.0
+initial_velocity_max = 6.0
+gravity = Vector3(0, -4, 0)
+scale_min = 0.3
+scale_max = 0.7
+color = Color(1.0, 0.85, 0.2, 1)
+
 [node name="ItemBox" type="Area3D"]
 script = ExtResource("1_item")
 
@@ -27,6 +41,18 @@ material_override = SubResource("Mat_item")
 [node name="Forma" type="CollisionShape3D" parent="."]
 shape = SubResource("Shape_item")
 
-[node name="Som" type="AudioStreamPlayer" parent="."]
+[node name="Brilho" type="GPUParticles3D" parent="."]
+emitting = false
+one_shot = true
+amount = 30
+lifetime = 0.6
+explosiveness = 0.9
+process_material = SubResource("PM_brilho")
+draw_pass_1 = SubResource("PMesh_brilho")
+
+[node name="Som" type="AudioStreamPlayer3D" parent="."]
 stream = ExtResource("2_som")
 volume_db = -3.0
+unit_size = 6.0
+max_distance = 60.0
+bus = "SFX"
