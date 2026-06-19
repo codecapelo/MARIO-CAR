@@ -50,6 +50,7 @@ var travado: bool = true
 var boost_timer: float = 0.0
 var estrela_timer: float = 0.0   # tempo restante de "estrela" (super poder)
 var _estrela_extra: float = 0.0  # velocidade extra que a estrela concede
+var _resgate_timer: float = 0.0  # tempo segurando o botão de voltar à pista
 var driftando: bool = false
 var drift_sentido: float = 0.0   # -1 esquerda, +1 direita (travado ao iniciar)
 var drift_carga: float = 0.0     # segundos acumulados derrapando
@@ -107,6 +108,9 @@ func _physics_process(delta: float) -> void:
 		velocity = -global_transform.basis.y * 2.0   # assenta no chão
 		move_and_slide()
 		_atualizar_motor()
+		return
+
+	if _checar_resgate(delta):
 		return
 
 	_detectar_chao()
@@ -298,6 +302,49 @@ func _respawn() -> void:
 	# resultado nem pausado), senão o kart "descongelaria" na tela de fim.
 	if is_instance_valid(self) and Jogo.estado == Jogo.Estado.CORRENDO:
 		travado = false
+
+
+# Segurar o botão "voltar_pista" por um instante reposiciona o kart na pista
+# (no ponto mais próximo da curva, virado para frente). Resgata quando o kart
+# fica preso fora da pista sem ter caído no mar.
+func _checar_resgate(delta: float) -> bool:
+	if Input.is_action_pressed("voltar_pista"):
+		_resgate_timer += delta
+		if _resgate_timer >= 0.35:
+			_voltar_para_pista()
+			_resgate_timer = 0.0
+			return true
+	else:
+		_resgate_timer = 0.0
+	return false
+
+
+func _voltar_para_pista() -> void:
+	velocity = Vector3.ZERO
+	velocidade_atual = 0.0
+	boost_timer = 0.0
+	estrela_timer = 0.0
+	_estrela_extra = 0.0
+	driftando = false
+	drift_carga = 0.0
+	if som_drift:
+		som_drift.stop()
+	var path := get_node_or_null("../TrackPath") as Path3D
+	if path and path.curve and path.curve.get_baked_length() > 0.0:
+		var curva := path.curve
+		var comp := curva.get_baked_length()
+		var off := curva.get_closest_offset(path.to_local(global_position))
+		var pos: Vector3 = path.to_global(curva.sample_baked(off))
+		var prox: Vector3 = path.to_global(curva.sample_baked(fmod(off + 2.0, comp)))
+		var frente := prox - pos
+		frente.y = 0.0
+		global_position = pos + Vector3.UP * 0.8
+		up_direction = Vector3.UP
+		if frente.length() > 0.01:
+			look_at(global_position + frente.normalized(), Vector3.UP)
+	else:
+		global_transform = _ultimo_seguro
+	_tremer_camera(0.12)
 
 
 func aplicar_boost(duracao: float = 2.0) -> void:
