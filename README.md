@@ -9,7 +9,11 @@ Jogo de kart **3D** feito em **Godot 4.6**, no estilo Mario Kart: uma **ponte de
 - 🧭 **Fluxo completo de jogo**: Menu → Corrida → Resultado, com **menu de pausa** e **transições com fade**.
 - 🏁 **Corrida de verdade**: número de voltas configurável, **posição em tempo real** (1º/Nº), **vencedor** e **tela de resultado** com tempos por volta e **recorde salvo em disco**.
 - 🏎️ **Física de kart arcade**: aceleração com "peso", direção que afina em alta velocidade, **inércia lateral** e — o destaque — **DRIFT/derrapagem com mini-turbo** (segura o drift na curva, acumula carga e ganha um turbinho ao soltar).
-- 🤖 **4 rivais** com IA "elástica" (rubber-banding): aceleram quando ficam para trás e aliviam quando estão na frente — a corrida fica sempre disputada. Cada rival tem uma cor.
+- 🤖 **4 rivais** com IA "elástica" (rubber-banding): aceleram quando ficam para trás e aliviam quando estão na frente — a corrida fica sempre disputada. Cada rival tem **nome e cor**, **bate e sai da trajetória** (a trombada empurra de verdade) e **usa itens**.
+- 🎁 **Itens estilo Mario Kart**: as caixas "?" dão um item **aleatório, pesado pela posição** (quem está atrás ganha itens melhores). Você **segura** e usa quando quiser (tecla **E**): **turbo, estrela, raio, banana** (solta atrás) e **casco** (atira pra frente). Os rivais também usam.
+- 🛣️ **3 pistas** com climas diferentes (Ponte do Oceano, Baía do Pôr do Sol, Ilha da Lua), **asfalto de corrida**, **linha central** e **zebras** vermelho/branco nas curvas.
+- ⚙️ **Menu de opções**: voltas, **dificuldade** (Fácil/Normal/Difícil), **escolha da pista**, **cor do kart** e tela "como jogar".
+- 🏆 **Acabamento de corrida**: contagem **3-2-1** com "pulo", aviso de **ÚLTIMA VOLTA**, alerta de **CONTRAMÃO** e **classificação ao vivo** com os nomes.
 - 🎥 **Câmera viva**: persegue o kart, **abre o campo de visão** com a velocidade e **treme** no turbo.
 - ✨ **VFX**: chamas de turbo, fumaça do escapamento, **poeira/faíscas no drift** (mudam de cor com a carga), flash ao pegar item, **rodas girando**, corpo inclinando nas curvas, **SSAO + glow + névoa** e sombras de qualidade.
 - 🔊 **Áudio completo**: **música** em loop, barramentos (Master/Música/Efeitos) com volumes ajustáveis, motor dinâmico (varia com a aceleração), sons de turbo, drift, largada e **fanfarra** de vitória; rival e caixas com **áudio espacial 3D**.
@@ -25,6 +29,7 @@ Jogo de kart **3D** feito em **Godot 4.6**, no estilo Mario Kart: uma **ponte de
 | Virar | ← → / **A D** | analógico esquerdo |
 | **Drift** | **Shift** | R1 (ombro direito) |
 | Freio de mão | **Espaço** | X |
+| **Usar item** | **E** | L1 (ombro esquerdo) |
 | Pausar | **Esc** | Start |
 | Reiniciar | **R** | Y |
 
@@ -39,8 +44,9 @@ Abra o projeto no **Godot 4.6** e aperte **F5**. O jogo começa no **menu** (`me
 As cenas 3D e os áudios procedurais são **gerados por scripts Python** (para acertar a matemática e não depender de downloads). Os caminhos agora são **relativos** (funcionam em qualquer pasta):
 
 ```bash
+python3 tools/gen_texturas.py # gera assets/asfalto.png (textura da pista)
 python3 tools/gen_kart.py     # gera kart_3d.tscn e kart_npc.tscn
-python3 tools/gen_main3d.py   # gera main_3d.tscn
+python3 tools/gen_main3d.py   # gera main_3d.tscn, pista2.tscn e pista3.tscn
 python3 tools/gen_audio.py    # gera assets/musica_corrida.wav, whoosh, drift, fanfarra
 ```
 
@@ -59,5 +65,5 @@ As texturas (céu, pedra, água, etc.) ficam em `assets/`.
 ## 📌 Pendências / ideias futuras
 
 - **Loop‑the‑loop**: a física cinemática ainda não segura bem uma curva invertida a alta velocidade.
-- **Colisão entre karts**: os rivais ainda se atravessam (são cinemáticos na curva); falta dar corpo físico a eles.
-- **Mais itens** além do turbo (cascos, banana, etc.).
+- **Áudio**: os sons ainda são gerados por script (`tools/gen_audio.py`). Trocar por samples reais elevaria bastante a qualidade — ainda na lista.
+- **Casco que persegue** (vermelho), mais pistas e modelos 3D importados (.glb) no lugar dos montados por script.

@@ -81,32 +81,58 @@ def _uid_str(n):
 	return s
 
 
-# ---------------- MÚSICA (loop ~8s) ----------------
+# ---------------- MÚSICA (loop ~16s) ----------------
 def gerar_musica():
-	bpm = 132.0
-	dur = 8.0
+	# Trilha mais "cheia": progressão de acordes (I–vi–IV–V em Dó maior),
+	# baixo andante, bumbo no tempo, um pad de harmonia e a melodia em arpejo.
+	bpm = 128.0
+	dur = 16.0
 	n = int(SR * dur)
-	# padrão de arpejo (semitons) — uma volta alegre em Dó maior
-	notas = [0, 4, 7, 12, 7, 4, 7, 12, 0, 4, 7, 16, 12, 7, 4, 0]
-	passo_por_seg = (bpm / 60.0) * 2.0   # colcheias
+	spb = bpm / 60.0                 # batidas (semínimas) por segundo
+	compasso = dur / 4.0             # 4 acordes no loop, um por trecho
+	# acordes como conjuntos de semitons a partir do Dó (fundamental, terça, quinta)
+	acordes = [
+		[0, 4, 7],     # I  – Dó maior
+		[-3, 0, 4],    # vi – Lá menor
+		[-7, -3, 0],   # IV – Fá maior (abaixo)
+		[-5, -1, 2],   # V  – Sol maior (abaixo)
+	]
+	# melodia (índice de tom do acorde; >=3 sobe uma oitava)
+	arpejo = [0, 1, 2, 1, 0, 2, 1, 2]
 	out = []
 	for i in range(n):
 		t = i / SR
-		idx = int(t * passo_por_seg) % len(notas)
-		f = freq(notas[idx])
-		# arpejo em onda triangular (suave)
-		tri = 2.0 * abs(2.0 * ((t * f) % 1.0) - 1.0) - 1.0
-		# baixo uma oitava abaixo, onda quadrada fraca, troca mais devagar
-		idxb = int(t * passo_por_seg * 0.5) % len(notas)
-		fb = freq(notas[idxb] - 12)
-		sq = 1.0 if (t * fb) % 1.0 < 0.5 else -1.0
-		s = 0.34 * tri + 0.16 * sq
-		# pequeno "ataque" rítmico para dar pulso
-		batida = (t * passo_por_seg) % 1.0
-		s *= 0.7 + 0.3 * (1.0 - batida)
-		# fade bem curto nas pontas para não estalar no loop
-		env = min(1.0, t / 0.01, (dur - t) / 0.01)
-		out.append(s * env * 0.85)
+		ci = int(t / compasso) % len(acordes)
+		acorde = acordes[ci]
+
+		# --- melodia: arpejo em onda triangular (doce) ---
+		passo = int(t * spb * 2.0) % len(arpejo)     # colcheias
+		grau = arpejo[passo]
+		fm = freq(acorde[grau % 3] + 12)             # uma 8ª acima
+		tri = 2.0 * abs(2.0 * ((t * fm) % 1.0) - 1.0) - 1.0
+		ataque = (t * spb * 2.0) % 1.0
+		melodia = tri * (0.6 + 0.4 * (1.0 - ataque))
+
+		# --- pad de harmonia: senoides suaves dos tons do acorde ---
+		pad = 0.0
+		for s_ in acorde:
+			pad += math.sin(2.0 * math.pi * freq(s_) * t)
+		pad /= len(acorde)
+
+		# --- baixo: onda quadrada fraca, fundamental uma 8ª abaixo ---
+		passo_b = int(t * spb) % 4
+		fb = freq(acorde[0] - 12 + (7 if passo_b == 2 else 0))
+		baixo = 1.0 if (t * fb) % 1.0 < 0.5 else -1.0
+
+		# --- bumbo: senoide grave que decai a cada tempo ---
+		fase_beat = (t * spb) % 1.0
+		env_kick = max(0.0, 1.0 - fase_beat * 6.0)
+		kick = math.sin(2.0 * math.pi * 70.0 * fase_beat / spb) * env_kick
+
+		s = 0.30 * melodia + 0.16 * pad + 0.14 * baixo + 0.5 * kick
+		s = math.tanh(s * 1.2)                       # limitador suave (mais "cheio")
+		env = min(1.0, t / 0.02, (dur - t) / 0.02)   # fade nas pontas p/ o loop
+		out.append(s * env * 0.7)
 	escrever_wav("musica_corrida.wav", out)
 	escrever_import("musica_corrida.wav", loop=True)
 
