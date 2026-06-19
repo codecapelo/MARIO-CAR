@@ -363,7 +363,8 @@ func _atualizar_visual(delta: float) -> void:
 	var sentido := Input.get_axis("virar_esquerda", "virar_direita")
 	if driftando:
 		sentido = clampf(sentido + drift_sentido * 0.4, -1.0, 1.0)
-	_esterco = lerpf(_esterco, deg_to_rad(24.0) * sentido, clampf(10.0 * delta, 0.0, 1.0))
+	# -sentido para a roda apontar para o MESMO lado que o kart vira (ver _virar)
+	_esterco = lerpf(_esterco, deg_to_rad(24.0) * -sentido, clampf(10.0 * delta, 0.0, 1.0))
 	for i in _rodas.size():
 		var r := _rodas[i] as Node3D
 		if r == null:
