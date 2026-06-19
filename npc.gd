@@ -25,6 +25,8 @@ extends CharacterBody3D
 @export var vel_max: float = 34.0            # nem mais rápido que isso
 @export var indice: int = 1                  # número do rival (1, 2, 3...)
 @export var cor: Color = Color(0.16, 0.62, 0.2, 1)  # cor do corpo do rival
+@export var aceleracao: float = 26.0         # acelera do zero na largada (m/s²)
+@export var dist_inicial: float = 0.0        # deslocamento na pista p/ o grid de largada
 
 # Se for empurrado para MUITO longe do lugar dele na pista (batida feia,
 # largada, respawn), reposiciona direto em vez de voltar correndo — evita
@@ -39,6 +41,7 @@ var no_path: Node3D
 var pista: Node                              # o gerente da corrida (grupo "pista")
 var dist: float = 0.0                        # distância já percorrida na curva
 var _raio_timer: float = 0.0                 # tempo restante "lento" por causa do raio
+var _vel_atual: float = 0.0                  # velocidade real (sobe do zero na largada)
 
 @onready var motor: AudioStreamPlayer3D = get_node_or_null("MotorNPC")
 var _rodas: Array = []
@@ -61,9 +64,10 @@ func _ready() -> void:
 
 	pista = get_tree().get_first_node_in_group("pista")
 
-	# Já começa alinhado na linha de largada (sobre a curva, no seu corredor).
+	# Posição de largada no grid: cada rival num ponto da reta principal.
 	if curva:
-		var par := _alvo_e_frente(0.0)
+		dist = fposmod(dist_inicial, curva.get_baked_length())
+		var par := _alvo_e_frente(dist)
 		global_position = par[0]
 		look_at(global_position + par[1], Vector3.UP)
 
@@ -83,20 +87,23 @@ func _physics_process(delta: float) -> void:
 
 	# Só avança depois da largada.
 	var correndo: bool = (Jogo.estado == Jogo.Estado.CORRENDO)
-	var vel := velocidade_base
 	if correndo:
-		vel = _velocidade_com_elastico()
+		var vel := _velocidade_com_elastico()
 		if _raio_timer > 0.0:
 			_raio_timer -= delta
 			vel *= 0.35              # atingido pelo raio: fica bem lento
-		dist = fmod(dist + vel * delta, comprimento)
-		_girar_rodas(vel, delta)
+		# acelera do zero — NÃO sai voando na largada (igual ao jogador)
+		_vel_atual = move_toward(_vel_atual, vel, aceleracao * delta)
+		dist = fmod(dist + _vel_atual * delta, comprimento)
+		_girar_rodas(_vel_atual, delta)
+	else:
+		_vel_atual = 0.0
 
-	_seguir_pista(delta, vel)
+	_seguir_pista(delta, maxf(_vel_atual, vel_min))
 
 	# Motor espacial: um zumbido que varia um pouco com a velocidade.
 	if motor:
-		motor.pitch_scale = 0.85 + (vel / vel_max) * 0.5
+		motor.pitch_scale = 0.85 + (_vel_atual / vel_max) * 0.5
 
 
 # Calcula a velocidade do rival reagindo à distância para o jogador.
