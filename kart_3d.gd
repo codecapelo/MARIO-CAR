@@ -440,7 +440,7 @@ func _soltar_banana() -> void:
 	var cena := load("res://banana.tscn")
 	if cena == null:
 		return
-	var b := cena.instantiate()
+	var b = cena.instantiate()   # sem tipo fixo: vamos acessar .dono dinamicamente
 	b.dono = self
 	var frente := -global_transform.basis.z
 	frente.y = 0.0
@@ -453,7 +453,7 @@ func _disparar_casco() -> void:
 	var cena := load("res://casco.tscn")
 	if cena == null:
 		return
-	var c := cena.instantiate()
+	var c = cena.instantiate()   # sem tipo fixo: vamos acessar .dono/.direcao
 	var frente := -global_transform.basis.z
 	frente.y = 0.0
 	frente = frente.normalized()
@@ -489,7 +489,7 @@ func _processar_colisoes() -> void:
 		return
 	for i in get_slide_collision_count():
 		var c := get_slide_collision(i)
-		var outro := c.get_collider()
+		var outro = c.get_collider()   # Object: acessamos métodos de Node dinamicamente
 		if outro and outro != self and outro.is_in_group("corredores"):
 			if estrela_timer > 0.0:
 				if outro.has_method("rodopiar"):
