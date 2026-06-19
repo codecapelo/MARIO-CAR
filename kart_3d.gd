@@ -18,11 +18,11 @@ extends CharacterBody3D
 # ============================================================
 
 # --- velocidades e aceleração ---
-@export var velocidade_maxima: float = 24.0
-@export var velocidade_maxima_re: float = 9.0
-@export var aceleracao: float = 22.0
+@export var velocidade_maxima: float = 34.0
+@export var velocidade_maxima_re: float = 11.0
+@export var aceleracao: float = 26.0
 @export var atrito: float = 10.0
-@export var boost_extra: float = 16.0
+@export var boost_extra: float = 24.0
 
 # --- direção ---
 @export var velocidade_giro: float = 2.4
@@ -48,6 +48,9 @@ extends CharacterBody3D
 var velocidade_atual: float = 0.0
 var travado: bool = true
 var boost_timer: float = 0.0
+var estrela_timer: float = 0.0   # tempo restante de "estrela" (super poder)
+var _estrela_extra: float = 0.0  # velocidade extra que a estrela concede
+var _resgate_timer: float = 0.0  # tempo segurando o botão de voltar à pista
 var driftando: bool = false
 var drift_sentido: float = 0.0   # -1 esquerda, +1 direita (travado ao iniciar)
 var drift_carga: float = 0.0     # segundos acumulados derrapando
@@ -92,7 +95,12 @@ func _ready() -> void:
 
 
 func _teto() -> float:
-	return velocidade_maxima + (boost_extra if boost_timer > 0.0 else 0.0)
+	var teto := velocidade_maxima
+	if boost_timer > 0.0:
+		teto += boost_extra
+	if estrela_timer > 0.0:
+		teto += _estrela_extra
+	return teto
 
 
 func _physics_process(delta: float) -> void:
@@ -102,6 +110,9 @@ func _physics_process(delta: float) -> void:
 		_atualizar_motor()
 		return
 
+	if _checar_resgate(delta):
+		return
+
 	_detectar_chao()
 	_acelerar_ou_frear(delta)
 	_atualizar_drift(delta)
@@ -109,6 +120,11 @@ func _physics_process(delta: float) -> void:
 	_mover(delta)
 	if boost_timer > 0.0:
 		boost_timer -= delta
+	if estrela_timer > 0.0:
+		estrela_timer -= delta
+		boost_timer = maxf(boost_timer, 0.2)   # mantém o turbo aceso durante a estrela
+		if estrela_timer <= 0.0:
+			_estrela_extra = 0.0
 	_atualizar_motor()
 	_atualizar_visual(delta)
 	_atualizar_vfx()
@@ -271,6 +287,8 @@ func _respawn() -> void:
 	velocity = Vector3.ZERO
 	velocidade_atual = 0.0
 	boost_timer = 0.0
+	estrela_timer = 0.0
+	_estrela_extra = 0.0
 	driftando = false
 	drift_carga = 0.0
 	if som_drift:
@@ -286,6 +304,49 @@ func _respawn() -> void:
 		travado = false
 
 
+# Segurar o botão "voltar_pista" por um instante reposiciona o kart na pista
+# (no ponto mais próximo da curva, virado para frente). Resgata quando o kart
+# fica preso fora da pista sem ter caído no mar.
+func _checar_resgate(delta: float) -> bool:
+	if Input.is_action_pressed("voltar_pista"):
+		_resgate_timer += delta
+		if _resgate_timer >= 0.35:
+			_voltar_para_pista()
+			_resgate_timer = 0.0
+			return true
+	else:
+		_resgate_timer = 0.0
+	return false
+
+
+func _voltar_para_pista() -> void:
+	velocity = Vector3.ZERO
+	velocidade_atual = 0.0
+	boost_timer = 0.0
+	estrela_timer = 0.0
+	_estrela_extra = 0.0
+	driftando = false
+	drift_carga = 0.0
+	if som_drift:
+		som_drift.stop()
+	var path := get_node_or_null("../TrackPath") as Path3D
+	if path and path.curve and path.curve.get_baked_length() > 0.0:
+		var curva := path.curve
+		var comp := curva.get_baked_length()
+		var off := curva.get_closest_offset(path.to_local(global_position))
+		var pos: Vector3 = path.to_global(curva.sample_baked(off))
+		var prox: Vector3 = path.to_global(curva.sample_baked(fmod(off + 2.0, comp)))
+		var frente := prox - pos
+		frente.y = 0.0
+		global_position = pos + Vector3.UP * 0.8
+		up_direction = Vector3.UP
+		if frente.length() > 0.01:
+			look_at(global_position + frente.normalized(), Vector3.UP)
+	else:
+		global_transform = _ultimo_seguro
+	_tremer_camera(0.12)
+
+
 func aplicar_boost(duracao: float = 2.0) -> void:
 	boost_timer = maxf(boost_timer, duracao)
 	# empurra para perto do novo teto sem cravar (entrada suave)
@@ -293,6 +354,34 @@ func aplicar_boost(duracao: float = 2.0) -> void:
 	if som_boost:
 		som_boost.play()
 	_tremer_camera(0.3)
+
+
+# Chamado pela caixa de item. Cada "tipo" dá um poder diferente.
+func pegar_item(tipo: String) -> void:
+	match tipo:
+		"estrela":
+			ativar_estrela(6.0)
+		"raio":
+			disparar_raio()
+		_:
+			aplicar_boost(2.0)   # turbo comum
+
+
+# ESTRELA: um super-turbo — anda MUITO mais rápido e por mais tempo.
+func ativar_estrela(duracao: float) -> void:
+	estrela_timer = maxf(estrela_timer, duracao)
+	_estrela_extra = 16.0
+	aplicar_boost(duracao)
+
+
+# RAIO: deixa todos os rivais lentos por alguns segundos (vantagem na corrida).
+func disparar_raio() -> void:
+	for r in get_tree().get_nodes_in_group("rivais"):
+		if r.has_method("levar_raio"):
+			r.levar_raio(3.5)
+	if som_boost:
+		som_boost.play()
+	_tremer_camera(0.35)
 
 
 func _tremer_camera(intensidade: float) -> void:
@@ -321,7 +410,8 @@ func _atualizar_visual(delta: float) -> void:
 	var sentido := Input.get_axis("virar_esquerda", "virar_direita")
 	if driftando:
 		sentido = clampf(sentido + drift_sentido * 0.4, -1.0, 1.0)
-	_esterco = lerpf(_esterco, deg_to_rad(24.0) * sentido, clampf(10.0 * delta, 0.0, 1.0))
+	# -sentido para a roda apontar para o MESMO lado que o kart vira (ver _virar)
+	_esterco = lerpf(_esterco, deg_to_rad(24.0) * -sentido, clampf(10.0 * delta, 0.0, 1.0))
 	for i in _rodas.size():
 		var r := _rodas[i] as Node3D
 		if r == null:

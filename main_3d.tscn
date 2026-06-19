@@ -115,8 +115,8 @@ size = Vector3(9.0, 0.6, 10.0)
 
 [sub_resource type="Curve3D" id="Track_curve"]
 _data = {
-"points": PackedVector3Array(-6.6654, -0.0, -15.4342, 6.6654, 0.0, 15.4342, 133.8368, 0.0, 0.0, 8.8531, -0.0, -13.453, -8.8531, 0.0, 13.453, 131.7803, 0.0, 54.5852, 17.0245, -0.0, -2.8259, -17.0245, 0.0, 2.8259, 80.718, 0.0, 80.718, 13.453, -0.0, 1.8019, -13.453, 0.0, -1.8019, 29.6331, 0.0, 71.5406, 11.0482, -0.0, -2.826, -11.0482, 0.0, 2.826, 0.0, 0.0, 69.9066, 14.5971, -0.0, -2.946, -14.5971, 0.0, 2.946, -36.6564, 0.0, 88.4964, 13.2273, -0.0, 6.7399, -13.2273, 0.0, -6.7399, -87.5825, 0.0, 87.5825, 3.1919, -0.0, 14.5971, -3.1919, 0.0, -14.5971, -116.0202, 0.0, 48.0571, -4.6061, -0.0, 14.1111, 4.6061, 0.0, -14.1111, -106.734, 0.0, 0.0, -5.3788, -0.0, 12.4102, 5.3788, 0.0, -12.4102, -88.3836, 0.0, -36.6097, -7.2278, -0.0, 12.0118, 7.2278, 0.0, -12.0118, -74.4613, 0.0, -74.4613, -12.4102, -0.0, 5.8436, 12.4102, 0.0, -5.8436, -45.017, 0.0, -108.6807, -12.9821, -0.0, -4.8853, 12.9821, 0.0, 4.8853, -0.0, 0.0, -109.5227, -9.0372, -0.0, -9.2166, 9.0372, 0.0, 9.2166, 32.8758, 0.0, -79.3691, -9.8187, -0.0, -6.8915, 9.8187, 0.0, 6.8915, 54.223, 0.0, -54.223, -13.269, -0.0, -9.0372, 13.269, 0.0, 9.0372, 91.788, 0.0, -38.0198),
-"tilts": PackedFloat32Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+"points": PackedVector3Array(-45, 0, 0, 45, 0, 0, 0, 0, 48, -44.845, 0, 3.7319, 12.2037, 0, -1.0156, 135, 0, 48, -8.6591, 0, 8.6591, 8.6591, 0, -8.6591, 168.9411, 0, 33.9411, 0, 0, 12.2459, 0, 0, -12.2459, 183, 0, 0, 8.6591, 0, 8.6591, -8.6591, 0, -8.6591, 168.9411, 0, -33.9411, 12.1354, 0, 1.6414, -23.1228, 0, -3.1275, 135, 0, -48, 23.1361, 0, -3.0272, -13.0752, 0, 1.7108, 65, 0, -48, 12.9628, 0, 2.4197, -15.4667, 0, -2.8871, 28, 0, -34, 15.5586, 0, 2.3422, -18.7072, 0, -2.8161, -10, 0, -62, 18.8004, 0, -2.1056, -23.1883, 0, 2.5971, -65, 0, -48, 23.1228, 0, -3.1275, -12.1354, 0, 1.6414, -135, 0, -48, 8.6591, 0, -8.6591, -8.6591, 0, 8.6591, -168.9411, 0, -33.9411, 0, 0, -12.2459, 0, 0, 12.2459, -183, 0, 0, -8.6591, 0, -8.6591, 8.6591, 0, 8.6591, -168.9411, 0, 33.9411, -12.2037, 0, -1.0156, 44.845, 0, 3.7319, -135, 0, 48, -45, 0, 0, 45, 0, 0, 0, 0, 48),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 "point_count": 16
 }
 
@@ -160,20 +160,9 @@ smooth_faces = false
 material = SubResource("Mat_pedra")
 
 [node name="FinishLine" type="MeshInstance3D" parent="."]
-transform = Transform3D(-0.918, 0.0, -0.3965, 0.0, 1.0, -0.0, 0.3965, -0.0, -0.918, 133.8368, 0.05, 0.0)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0, 0.05, 48)
 mesh = SubResource("Mesh_finish")
 material_override = SubResource("Mat_checker")
-
-[node name="Rampa" type="StaticBody3D" parent="."]
-
-[node name="RampaMesh" type="MeshInstance3D" parent="Rampa"]
-transform = Transform3D(-0.1637, 0.2719, 0.9483, 0.0, 0.9613, -0.2756, -0.9865, -0.0451, -0.1574, 80.718, 0.0, 80.718)
-mesh = SubResource("Mesh_rampa")
-material_override = SubResource("Mat_vermelho")
-
-[node name="RampaCol" type="CollisionShape3D" parent="Rampa"]
-transform = Transform3D(-0.1637, 0.2719, 0.9483, 0.0, 0.9613, -0.2756, -0.9865, -0.0451, -0.1574, 80.718, 0.0, 80.718)
-shape = SubResource("Shape_rampa")
 
 [node name="Torres" type="Node3D" parent="."]
 
@@ -193,7 +182,7 @@ autoplay = true
 bus = "Musica"
 
 [node name="Kart" parent="." instance=ExtResource("1_kart")]
-transform = Transform3D(-0.918, 0.0, -0.3965, 0.0, 1.0, -0.0, 0.3965, -0.0, -0.918, 133.8368, 0.9, 0.0)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -8, 0.9, 48)
 
 [node name="Camera3D" type="Camera3D" parent="Kart"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.8, 6.5)
@@ -342,40 +331,44 @@ volume_db = -2.0
 bus = "SFX"
 
 [node name="Rival1" parent="." instance=ExtResource("6_npc")]
-transform = Transform3D(-0.918, 0.0, -0.3965, 0.0, 1.0, -0.0, 0.3965, -0.0, -0.918, 128.3285, 0.0, 2.3788)
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, 54)
 script = ExtResource("11_npc")
-velocidade_base = 18.5
+velocidade_base = 25.0
 offset_lateral = -6.0
+dist_inicial = -8.0
 indice = 1
 cor = Color(0.2, 0.4, 0.85, 1)
 
 [node name="Rival2" parent="." instance=ExtResource("6_npc")]
-transform = Transform3D(-0.918, 0.0, -0.3965, 0.0, 1.0, -0.0, 0.3965, -0.0, -0.918, 131.0827, 0.0, 1.1894)
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, 51)
 script = ExtResource("11_npc")
-velocidade_base = 17.5
+velocidade_base = 24.0
 offset_lateral = -3.0
+dist_inicial = -16.0
 indice = 2
 cor = Color(0.9, 0.55, 0.15, 1)
 
 [node name="Rival3" parent="." instance=ExtResource("6_npc")]
-transform = Transform3D(-0.918, 0.0, -0.3965, 0.0, 1.0, -0.0, 0.3965, -0.0, -0.918, 136.5909, 0.0, -1.1894)
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, 45)
 script = ExtResource("11_npc")
-velocidade_base = 18.0
+velocidade_base = 24.5
 offset_lateral = 3.0
+dist_inicial = -16.0
 indice = 3
 cor = Color(0.16, 0.62, 0.2, 1)
 
 [node name="Rival4" parent="." instance=ExtResource("6_npc")]
-transform = Transform3D(-0.918, 0.0, -0.3965, 0.0, 1.0, -0.0, 0.3965, -0.0, -0.918, 139.3451, 0.0, -2.3788)
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, 42)
 script = ExtResource("11_npc")
-velocidade_base = 17.0
+velocidade_base = 23.5
 offset_lateral = 6.0
+dist_inicial = -8.0
 indice = 4
 cor = Color(0.7, 0.25, 0.75, 1)
 
 
 [node name="Torre0" type="Node3D" parent="Torres"]
-transform = Transform3D(-0.918, 0.0, -0.3965, 0.0, 1.0, -0.0, 0.3965, -0.0, -0.918, 133.8368, 0.0, 0.0)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0, 0, 48)
 
 [node name="ColEsq" type="MeshInstance3D" parent="Torres/Torre0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.2, 5, 0)
@@ -407,7 +400,7 @@ transform = Transform3D(18.0, 0.3624, 0.0, -7.0, 0.932, 0.0, 0.0, 0.0, 1.0, 0.0,
 mesh = SubResource("Mesh_braco")
 material_override = SubResource("Mat_vermelho")
 [node name="Torre5" type="Node3D" parent="Torres"]
-transform = Transform3D(-0.1978, 0.0, 0.9802, 0.0, 1.0, -0.0, -0.9802, 0.0, -0.1978, -36.6564, 0.0, 88.4964)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 183, 0, 0)
 
 [node name="ColEsq" type="MeshInstance3D" parent="Torres/Torre5"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.2, 5, 0)
@@ -439,7 +432,7 @@ transform = Transform3D(18.0, 0.3624, 0.0, -7.0, 0.932, 0.0, 0.0, 0.0, 1.0, 0.0,
 mesh = SubResource("Mesh_braco")
 material_override = SubResource("Mat_vermelho")
 [node name="Torre11" type="Node3D" parent="Torres"]
-transform = Transform3D(0.426, 0.0, -0.9047, -0.0, 1.0, -0.0, 0.9047, 0.0, 0.426, -45.017, 0.0, -108.6807)
+transform = Transform3D(0.134, 0, 0.991, 0, 1, 0, -0.991, 0, 0.134, -135, 0, -48)
 
 [node name="ColEsq" type="MeshInstance3D" parent="Torres/Torre11"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.2, 5, 0)
@@ -472,29 +465,35 @@ mesh = SubResource("Mesh_braco")
 material_override = SubResource("Mat_vermelho")
 
 [node name="Item1" parent="Itens" instance=ExtResource("12_item")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30.0977, 1.4, 68.0715)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 95, 1.4, 52)
 [node name="Item2" parent="Itens" instance=ExtResource("12_item")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29.6331, 1.4, 71.5406)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 105, 1.4, 48)
+tipo = "estrela"
 [node name="Item3" parent="Itens" instance=ExtResource("12_item")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29.1684, 1.4, 75.0096)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 115, 1.4, 44)
 [node name="Item4" parent="Itens" instance=ExtResource("12_item")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -103.4067, 1.4, 1.0861)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 95, 1.4, -44)
+tipo = "raio"
 [node name="Item5" parent="Itens" instance=ExtResource("12_item")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -106.734, 1.4, 0.0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 105, 1.4, -48)
 [node name="Item6" parent="Itens" instance=ExtResource("12_item")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -110.0612, 1.4, -1.0861)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 115, 1.4, -52)
+tipo = "estrela"
 [node name="Item7" parent="Itens" instance=ExtResource("12_item")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30.3767, 1.4, -76.9187)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -90, 1.4, -52)
 [node name="Item8" parent="Itens" instance=ExtResource("12_item")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32.8758, 1.4, -79.3691)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -100, 1.4, -48)
+tipo = "raio"
 [node name="Item9" parent="Itens" instance=ExtResource("12_item")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35.3748, 1.4, -81.8195)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -110, 1.4, -44)
 [node name="Item10" parent="Itens" instance=ExtResource("12_item")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 137.6522, 1.4, 39.2956)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -90, 1.4, 44)
+tipo = "estrela"
 [node name="Item11" parent="Itens" instance=ExtResource("12_item")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 140.5759, 1.4, 41.2197)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -100, 1.4, 48)
 [node name="Item12" parent="Itens" instance=ExtResource("12_item")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 143.4996, 1.4, 43.1437)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -110, 1.4, 52)
+tipo = "raio"
 
 [node name="Mont1" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(1.35, 0, 0, 0, 1.35, 0, 0, 0, 1.35, -340.0, 94.625, -150.0)

@@ -1,25 +1,47 @@
-extends Node3D
+extends CharacterBody3D
 
 # ============================================================
 #  IA DO RIVAL — segue a curva da pista (TrackPath) com "elástico"
 #  (rubber-banding): se está muito atrás do jogador, acelera; se está
 #  muito na frente, alivia — assim a corrida fica sempre disputada.
 #
+#  O rival agora é um CORPO FÍSICO (CharacterBody3D): em vez de se
+#  teleportar para a curva, ele anda em direção ao ponto ideal usando
+#  uma "velocidade-alvo", e o move_and_slide() resolve as COLISÕES com
+#  os outros karts. Resultado: os carrinhos não se atravessam mais —
+#  batem e deslizam um no outro.
+#
+#  Ele colide SÓ com outros karts (máscara "Karts"), ignorando a pista
+#  no cálculo de colisão. Assim continua seguindo a curva plana sem
+#  bater na rampa nem precisar de gravidade.
+#
 #  O rival só anda depois da largada (Jogo.estado == CORRENDO).
 # ============================================================
 
-@export var velocidade_base: float = 18.0   # metros por segundo (ritmo natural)
+@export var velocidade_base: float = 23.0   # metros por segundo (ritmo natural)
 @export var offset_lateral: float = 4.5      # quanto fica para o lado da pista
-@export var ganho_borracha: float = 0.06     # quão forte reage à distância
-@export var vel_min: float = 13.0            # nunca anda mais devagar que isso
-@export var vel_max: float = 25.0            # nem mais rápido que isso
+@export var ganho_borracha: float = 0.08     # quão forte reage à distância
+@export var vel_min: float = 17.0            # nunca anda mais devagar que isso
+@export var vel_max: float = 34.0            # nem mais rápido que isso
 @export var indice: int = 1                  # número do rival (1, 2, 3...)
 @export var cor: Color = Color(0.16, 0.62, 0.2, 1)  # cor do corpo do rival
+@export var aceleracao: float = 26.0         # acelera do zero na largada (m/s²)
+@export var dist_inicial: float = 0.0        # deslocamento na pista p/ o grid de largada
+
+# Se for empurrado para MUITO longe do lugar dele na pista (batida feia,
+# largada, respawn), reposiciona direto em vez de voltar correndo — evita
+# disparos esquisitos.
+const DISTANCIA_TELEPORTE: float = 10.0
+# Teto da velocidade de reconvergência (× a velocidade atual), para o kart
+# não "tremer" tentando voltar ao lugar depois de uma trombada.
+const FATOR_VEL_MAX: float = 1.8
 
 var curva: Curve3D
 var no_path: Node3D
 var pista: Node                              # o gerente da corrida (grupo "pista")
 var dist: float = 0.0                        # distância já percorrida na curva
+var _raio_timer: float = 0.0                 # tempo restante "lento" por causa do raio
+var _vel_atual: float = 0.0                  # velocidade real (sobe do zero na largada)
 
 @onready var motor: AudioStreamPlayer3D = get_node_or_null("MotorNPC")
 var _rodas: Array = []
@@ -30,6 +52,10 @@ func _ready() -> void:
 	add_to_group("corredores")
 	add_to_group("rivais")
 
+	# Movimento "flutuante": sem gravidade nem noção de chão. O kart anda no
+	# plano da pista e o move_and_slide() só serve para bater nos outros karts.
+	motion_mode = CharacterBody3D.MOTION_MODE_FLOATING
+
 	no_path = get_node_or_null("../TrackPath") as Node3D
 	if no_path:
 		curva = (no_path as Path3D).curve
@@ -37,6 +63,13 @@ func _ready() -> void:
 		push_warning("NPC '%s': TrackPath não encontrado — o rival vai ficar parado." % name)
 
 	pista = get_tree().get_first_node_in_group("pista")
+
+	# Posição de largada no grid: cada rival num ponto da reta principal.
+	if curva:
+		dist = fposmod(dist_inicial, curva.get_baked_length())
+		var par := _alvo_e_frente(dist)
+		global_position = par[0]
+		look_at(global_position + par[1], Vector3.UP)
 
 	_pintar_corpo()
 	_coletar_rodas()
@@ -54,17 +87,23 @@ func _physics_process(delta: float) -> void:
 
 	# Só avança depois da largada.
 	var correndo: bool = (Jogo.estado == Jogo.Estado.CORRENDO)
-	var vel := velocidade_base
 	if correndo:
-		vel = _velocidade_com_elastico()
-		dist = fmod(dist + vel * delta, comprimento)
-		_girar_rodas(vel, delta)
+		var vel := _velocidade_com_elastico()
+		if _raio_timer > 0.0:
+			_raio_timer -= delta
+			vel *= 0.35              # atingido pelo raio: fica bem lento
+		# acelera do zero — NÃO sai voando na largada (igual ao jogador)
+		_vel_atual = move_toward(_vel_atual, vel, aceleracao * delta)
+		dist = fmod(dist + _vel_atual * delta, comprimento)
+		_girar_rodas(_vel_atual, delta)
+	else:
+		_vel_atual = 0.0
 
-	_posicionar()
+	_seguir_pista(delta, maxf(_vel_atual, vel_min))
 
 	# Motor espacial: um zumbido que varia um pouco com a velocidade.
 	if motor:
-		motor.pitch_scale = 0.85 + (vel / vel_max) * 0.5
+		motor.pitch_scale = 0.85 + (_vel_atual / vel_max) * 0.5
 
 
 # Calcula a velocidade do rival reagindo à distância para o jogador.
@@ -81,17 +120,50 @@ func _velocidade_com_elastico() -> float:
 	return clampf(velocidade_base + diferenca * ganho_borracha, vel_min, vel_max)
 
 
-# Coloca e orienta o rival na pista (mesmo parado, fica na linha de largada).
-func _posicionar() -> void:
+# Atingido pelo raio do jogador: fica lento por um tempo.
+func levar_raio(duracao: float) -> void:
+	_raio_timer = maxf(_raio_timer, duracao)
+
+
+# Anda em direção ao ponto ideal na pista, deixando o move_and_slide() resolver
+# as colisões com os outros karts (é isso que produz a "trombada").
+func _seguir_pista(delta: float, vel: float) -> void:
+	var par := _alvo_e_frente(dist)
+	var alvo: Vector3 = par[0]
+	var frente: Vector3 = par[1]
+
+	# Vetor até o ponto ideal, só no plano (a pista é plana, y é constante).
+	var para_alvo := alvo - global_position
+	para_alvo.y = 0.0
+
+	if para_alvo.length() > DISTANCIA_TELEPORTE:
+		# Muito longe (largada / respawn / empurrão forte): reposiciona na pista.
+		global_position = alvo
+		velocity = Vector3.ZERO
+	else:
+		# Velocidade que chegaria ao ponto ideal neste frame. Quando há outro
+		# kart na frente, o move_and_slide() segura e o rival desliza para o
+		# lado em vez de atravessar. O teto evita tremores ao reconvergir.
+		velocity = (para_alvo / delta).limit_length(vel * FATOR_VEL_MAX)
+
+	move_and_slide()
+	global_position.y = alvo.y   # trava a altura na pista (sem subir/cair)
+
+	# Aponta o corpo na direção da pista (só visual; não afeta a colisão).
+	look_at(global_position + frente, Vector3.UP)
+
+
+# Devolve [ponto_ideal_no_corredor, direção_para_frente] numa distância da curva.
+func _alvo_e_frente(d: float) -> Array:
 	var comprimento := curva.get_baked_length()
-	var pos := curva.sample_baked(dist)
-	var pos_frente := curva.sample_baked(fmod(dist + 1.5, comprimento))
-	var frente := (pos_frente - pos).normalized()
+	var pos := curva.sample_baked(d)
+	var frente := curva.sample_baked(fmod(d + 1.5, comprimento)) - pos
+	frente.y = 0.0
 	if frente.length() < 0.01:
 		frente = -global_transform.basis.z
+	frente = frente.normalized()
 	var lado := Vector3.UP.cross(frente).normalized()
-	global_position = pos + lado * offset_lateral
-	look_at(global_position + frente, Vector3.UP)
+	return [pos + lado * offset_lateral, frente]
 
 
 # Gira as rodas proporcional à velocidade (puro visual).
