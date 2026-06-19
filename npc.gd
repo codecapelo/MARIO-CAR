@@ -190,7 +190,7 @@ func _soltar_obstaculo(cena_path: String, dist_frente: float, altura: float) -> 
 	var cena := load(cena_path)
 	if cena == null:
 		return
-	var ob := cena.instantiate()
+	var ob = cena.instantiate()   # sem tipo fixo: vamos acessar .dono dinamicamente
 	var frente := -global_transform.basis.z
 	frente.y = 0.0
 	frente = frente.normalized()
@@ -203,7 +203,7 @@ func _disparar_casco_ia() -> void:
 	var cena := load("res://casco.tscn")
 	if cena == null:
 		return
-	var c := cena.instantiate()
+	var c = cena.instantiate()   # sem tipo fixo: vamos acessar .dono/.direcao
 	var frente := -global_transform.basis.z
 	frente.y = 0.0
 	frente = frente.normalized()
@@ -243,7 +243,7 @@ func _seguir_pista(delta: float, vel: float) -> void:
 	# trajetória por um tempo) e perde um pouco de velocidade.
 	for i in get_slide_collision_count():
 		var c := get_slide_collision(i)
-		var o := c.get_collider()
+		var o = c.get_collider()   # Object: acessamos métodos de Node dinamicamente
 		if o and o != self and o.is_in_group("corredores"):
 			var nrm := c.get_normal()
 			nrm.y = 0.0
