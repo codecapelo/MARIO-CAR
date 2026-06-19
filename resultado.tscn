@@ -52,18 +52,29 @@ theme_override_font_sizes/font_size = 26
 text = "de 5 corredores"
 horizontal_alignment = 1
 
-[node name="Tempos" type="Label" parent="Centro"]
+[node name="Cartao" type="PanelContainer" parent="Centro"]
 layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="Colunas" type="HBoxContainer" parent="Centro/Cartao"]
+layout_mode = 2
+theme_override_constants/separation = 36
+
+[node name="Tempos" type="Label" parent="Centro/Cartao/Colunas"]
+layout_mode = 2
+size_flags_vertical = 1
 theme_override_font_sizes/font_size = 26
 text = "Tempo total: --"
-horizontal_alignment = 1
 
-[node name="Classificacao" type="Label" parent="Centro"]
+[node name="Sep" type="VSeparator" parent="Centro/Cartao/Colunas"]
 layout_mode = 2
+
+[node name="Classificacao" type="Label" parent="Centro/Cartao/Colunas"]
+layout_mode = 2
+size_flags_vertical = 1
 theme_override_colors/font_color = Color(0.85, 0.92, 1, 1)
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 24
 text = ""
-horizontal_alignment = 1
 
 [node name="Botoes" type="HBoxContainer" parent="Centro"]
 layout_mode = 2
