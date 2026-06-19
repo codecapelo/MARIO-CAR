@@ -1,0 +1,32 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://casco.gd" id="1_casco"]
+
+[sub_resource type="SphereMesh" id="Mesh_casco"]
+radius = 0.45
+height = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Mat_casco"]
+albedo_color = Color(0.15, 0.78, 0.22, 1)
+emission_enabled = true
+emission = Color(0.1, 0.6, 0.15, 1)
+emission_energy_multiplier = 0.8
+metallic = 0.2
+roughness = 0.3
+
+[sub_resource type="SphereShape3D" id="Shape_casco"]
+radius = 0.5
+
+[node name="Casco" type="Area3D"]
+collision_layer = 4
+collision_mask = 2
+script = ExtResource("1_casco")
+
+[node name="Malha" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.8, 0, 0, 0, 1, 0, 0.4, 0)
+mesh = SubResource("Mesh_casco")
+material_override = SubResource("Mat_casco")
+
+[node name="Forma" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("Shape_casco")

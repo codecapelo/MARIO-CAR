@@ -37,7 +37,7 @@ func _ready() -> void:
 		$Centro/Classificacao.text = cl
 
 	# Botões.
-	$Centro/Botoes/Reiniciar.pressed.connect(func(): Transicao.trocar_cena(Jogo.CENA_CORRIDA))
+	$Centro/Botoes/Reiniciar.pressed.connect(func(): Transicao.trocar_cena(Jogo.cena_corrida_atual()))
 	$Centro/Botoes/Menu.pressed.connect(func(): Transicao.trocar_cena(Jogo.CENA_MENU))
 	$Centro/Botoes/Reiniciar.grab_focus()
 

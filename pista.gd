@@ -32,6 +32,7 @@ var _tempo_corrida: float = 0.0
 var _fase_contagem: float = 3.99
 var _ultimo_n: int = 99
 var _terminou: bool = false
+var _contramao: bool = false             # o jogador está indo no sentido errado?
 
 # tempos de volta do jogador
 var _inicio_volta: float = 0.0
@@ -52,7 +53,10 @@ func _ready() -> void:
 	_jogador = get_tree().get_first_node_in_group("jogador") as Node3D
 	for n in get_tree().get_nodes_in_group("corredores"):
 		var no := n as Node3D
-		var nome: String = "Você" if no.is_in_group("jogador") else String(no.name)
+		var nome: String = "Você"
+		if not no.is_in_group("jogador"):
+			# usa o nome do piloto, se o rival tiver um; senão, o nome do nó
+			nome = String(no.piloto_nome) if ("piloto_nome" in no and String(no.piloto_nome) != "") else String(no.name)
 		var off0 := 0.0
 		if _curva and _no_path:
 			off0 = _curva.get_closest_offset(_no_path.to_local(no.global_position))
@@ -124,6 +128,19 @@ func _atualizar_corredor(d: Dictionary) -> void:
 
 	d["off_ant"] = off
 	d["progresso"] = int(d["voltas"]) * _comprimento + off
+
+	# Só para o jogador: detecta se ele está virado contra o sentido da pista.
+	if no == _jogador:
+		var p_now := _curva.sample_baked(off)
+		var p_next := _curva.sample_baked(fmod(off + 2.0, _comprimento))
+		var tang := p_next - p_now
+		var frente := -no.global_transform.basis.z
+		tang.y = 0.0; frente.y = 0.0
+		var rapido: bool = ("velocidade_atual" in no) and absf(no.velocidade_atual) > 3.0
+		if tang.length() > 0.01 and frente.length() > 0.01:
+			_contramao = rapido and tang.normalized().dot(frente.normalized()) < -0.25
+		else:
+			_contramao = false
 
 
 func _ao_fechar_volta(d: Dictionary) -> void:
@@ -211,6 +228,54 @@ func tempo_volta_atual() -> float:
 
 func melhor_volta_jogador() -> float:
 	return _melhor_volta
+
+
+# O jogador está indo no sentido errado da pista? (só vale durante a corrida)
+func esta_contramao() -> bool:
+	return _contramao and Jogo.estado == Jogo.Estado.CORRENDO
+
+
+# ------------------------------------------------------------
+#  SORTEIO DE ITENS (igual ao Mario Kart: quem está atrás tem
+#  chance de itens melhores; o líder pega itens mais fracos).
+# ------------------------------------------------------------
+func sortear_item_para(no: Node) -> String:
+	var total := maxi(total_corredores(), 1)
+	var pos := posicao_de(no)
+	# frac: 0.0 = líder, 1.0 = último colocado
+	var frac := 0.0 if total <= 1 else clampf(float(pos - 1) / float(total - 1), 0.0, 1.0)
+	var pesos := {
+		"turbo": 3.0,
+		"banana": lerpf(3.0, 0.4, frac),
+		"casco": lerpf(1.0, 2.0, frac),
+		"raio": lerpf(0.0, 1.6, frac),
+		"estrela": lerpf(0.0, 2.2, frac),
+	}
+	return _sortear_por_peso(pesos)
+
+
+func _sortear_por_peso(pesos: Dictionary) -> String:
+	var soma := 0.0
+	for k in pesos:
+		soma += float(pesos[k])
+	if soma <= 0.0:
+		return "turbo"
+	var r := randf() * soma
+	for k in pesos:
+		r -= float(pesos[k])
+		if r <= 0.0:
+			return String(k)
+	return "turbo"
+
+
+# Classificação ao vivo (1º, 2º, ...) para o HUD: lista de {nome, eh_jogador}.
+func classificacao_atual() -> Array:
+	var lista := _corredores.duplicate()
+	lista.sort_custom(func(a, b): return float(a["progresso"]) > float(b["progresso"]))
+	var res: Array = []
+	for d in lista:
+		res.append({"nome": String(d["nome"]), "eh_jogador": d["no"] == _jogador})
+	return res
 
 
 func _classificacao_nomes() -> Array[String]:

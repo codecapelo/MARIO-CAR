@@ -61,6 +61,11 @@ custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 text = "Configurações"
 
+[node name="Controles" type="Button" parent="Centro/Botoes"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+text = "Como jogar"
+
 [node name="Sair" type="Button" parent="Centro/Botoes"]
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
@@ -74,10 +79,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -260.0
-offset_top = -200.0
-offset_right = 260.0
-offset_bottom = 200.0
+offset_left = -300.0
+offset_top = -280.0
+offset_right = 300.0
+offset_bottom = 280.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -111,6 +116,75 @@ text = "3"
 horizontal_alignment = 1
 
 [node name="Mais" type="Button" parent="PainelConfig/Caixa/Voltas"]
+layout_mode = 2
+text = "+"
+
+[node name="Dificuldade" type="HBoxContainer" parent="PainelConfig/Caixa"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Label" type="Label" parent="PainelConfig/Caixa/Dificuldade"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Dificuldade"
+
+[node name="Menos" type="Button" parent="PainelConfig/Caixa/Dificuldade"]
+layout_mode = 2
+text = "-"
+
+[node name="Valor" type="Label" parent="PainelConfig/Caixa/Dificuldade"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "Normal"
+horizontal_alignment = 1
+
+[node name="Mais" type="Button" parent="PainelConfig/Caixa/Dificuldade"]
+layout_mode = 2
+text = "+"
+
+[node name="Pista" type="HBoxContainer" parent="PainelConfig/Caixa"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Label" type="Label" parent="PainelConfig/Caixa/Pista"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Pista"
+
+[node name="Menos" type="Button" parent="PainelConfig/Caixa/Pista"]
+layout_mode = 2
+text = "-"
+
+[node name="Valor" type="Label" parent="PainelConfig/Caixa/Pista"]
+custom_minimum_size = Vector2(210, 0)
+layout_mode = 2
+text = "Ponte do Oceano"
+horizontal_alignment = 1
+
+[node name="Mais" type="Button" parent="PainelConfig/Caixa/Pista"]
+layout_mode = 2
+text = "+"
+
+[node name="Cor" type="HBoxContainer" parent="PainelConfig/Caixa"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Label" type="Label" parent="PainelConfig/Caixa/Cor"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Cor do kart"
+
+[node name="Menos" type="Button" parent="PainelConfig/Caixa/Cor"]
+layout_mode = 2
+text = "-"
+
+[node name="Valor" type="Label" parent="PainelConfig/Caixa/Cor"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "Vermelho"
+horizontal_alignment = 1
+
+[node name="Mais" type="Button" parent="PainelConfig/Caixa/Cor"]
 layout_mode = 2
 text = "+"
 
@@ -157,6 +231,49 @@ layout_mode = 2
 size_flags_vertical = 4
 
 [node name="Voltar" type="Button" parent="PainelConfig/Caixa"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Voltar"
+
+[node name="PainelControles" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -200.0
+offset_right = 320.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Caixa" type="VBoxContainer" parent="PainelControles"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Titulo" type="Label" parent="PainelControles/Caixa"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Como jogar"
+horizontal_alignment = 1
+
+[node name="Texto" type="Label" parent="PainelControles/Caixa"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Acelerar:  Cima / W          Re / Freio:  Baixo / S
+Virar:  Esquerda Direita  /  A D
+Drift (derrapar):  Shift          Freio de mao:  Espaco
+Usar item:  E
+Voltar a pista:  T (segure)
+Pausar:  Esc          Reiniciar:  R
+
+Pegue as caixas '?' para ganhar itens.
+Quem esta atras ganha itens melhores!"
+
+[node name="Voltar" type="Button" parent="PainelControles/Caixa"]
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Voltar"

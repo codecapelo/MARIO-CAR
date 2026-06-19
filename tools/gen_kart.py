@@ -53,6 +53,18 @@ def build(cor_corpo, cor_accent, cor_suit, cor_capacete, com_script):
         "Mesh_visor": ("BoxMesh", "size = Vector3(0.34, 0.13, 0.12)"),
         "Mesh_braco": ("CapsuleMesh", "radius = 0.075\nheight = 0.62"),
         "Mesh_volante": ("TorusMesh", "inner_radius = 0.1\nouter_radius = 0.19"),
+        # --- piloto mais caprichado ---
+        "Mesh_ombros": ("BoxMesh", "size = Vector3(0.62, 0.18, 0.34)"),
+        "Mesh_pescoco": ("CylinderMesh", "top_radius = 0.09\nbottom_radius = 0.1\nheight = 0.18"),
+        "Mesh_mao": ("SphereMesh", "radius = 0.09\nheight = 0.18"),
+        "Mesh_colo": ("BoxMesh", "size = Vector3(0.5, 0.24, 0.95)"),
+        "Mesh_pe": ("BoxMesh", "size = Vector3(0.32, 0.14, 0.3)"),
+        "Mesh_crista": ("BoxMesh", "size = Vector3(0.06, 0.13, 0.42)"),
+        # --- carroceria mais detalhada ---
+        "Mesh_banco": ("BoxMesh", "size = Vector3(0.58, 0.52, 0.12)"),
+        "Mesh_splitter": ("BoxMesh", "size = Vector3(1.3, 0.05, 0.36)"),
+        "Mesh_entrada": ("BoxMesh", "size = Vector3(0.16, 0.2, 0.34)"),
+        "Mesh_difusor": ("BoxMesh", "size = Vector3(1.0, 0.18, 0.3)"),
     }
     mats = {
         "Mat_corpo": (cor_corpo, "metallic = 0.35\nroughness = 0.35"),
@@ -85,13 +97,26 @@ def build(cor_corpo, cor_accent, cor_suit, cor_capacete, com_script):
         ("AroFD", "Mesh_aro", "Mat_aro", WHEEL, (0.82, 0.42, -0.95)),
         ("AroTE", "Mesh_aro", "Mat_aro", WHEEL, (-0.82, 0.42, 0.95)),
         ("AroTD", "Mesh_aro", "Mat_aro", WHEEL, (0.82, 0.42, 0.95)),
+        ("Banco", "Mesh_banco", "Mat_escuro", I, (0, 0.95, 0.62)),
+        ("Colo", "Mesh_colo", "Mat_suit", I, (0, 0.82, -0.25)),
+        ("PeE", "Mesh_pe", "Mat_escuro", I, (-0.16, 0.56, -0.72)),
+        ("PeD", "Mesh_pe", "Mat_escuro", I, (0.16, 0.56, -0.72)),
         ("Torso", "Mesh_torso", "Mat_suit", I, (0, 0.98, 0.28)),
+        ("Ombros", "Mesh_ombros", "Mat_suit", I, (0, 1.2, 0.26)),
+        ("Pescoco", "Mesh_pescoco", "Mat_pele", I, (0, 1.3, 0.2)),
         ("Cabeca", "Mesh_cabeca", "Mat_pele", I, (0, 1.42, 0.18)),
         ("Capacete", "Mesh_capacete", "Mat_capacete", I, (0, 1.45, 0.16)),
+        ("CristaCapacete", "Mesh_crista", "Mat_accent", I, (0, 1.6, 0.12)),
         ("Visor", "Mesh_visor", "Mat_visor", I, (0, 1.45, -0.05)),
         ("BracoE", "Mesh_braco", "Mat_suit", ARM, (-0.26, 1.02, -0.05)),
         ("BracoD", "Mesh_braco", "Mat_suit", ARM, (0.26, 1.02, -0.05)),
+        ("MaoE", "Mesh_mao", "Mat_pele", I, (-0.2, 0.95, -0.46)),
+        ("MaoD", "Mesh_mao", "Mat_pele", I, (0.2, 0.95, -0.46)),
         ("Volante", "Mesh_volante", "Mat_escuro", ALONGZ, (0, 0.92, -0.42)),
+        ("Splitter", "Mesh_splitter", "Mat_escuro", I, (0, 0.2, -1.88)),
+        ("EntradaE", "Mesh_entrada", "Mat_escuro", I, (-0.74, 0.44, -0.4)),
+        ("EntradaD", "Mesh_entrada", "Mat_escuro", I, (0.74, 0.44, -0.4)),
+        ("Difusor", "Mesh_difusor", "Mat_escuro", I, (0, 0.2, 1.46)),
     ]
 
     out = "[gd_scene load_steps=2 format=3]\n\n"  # load_steps é recontado no fim
@@ -108,8 +133,10 @@ def build(cor_corpo, cor_accent, cor_suit, cor_capacete, com_script):
     for k, (cor, extra) in mats.items():
         out += '[sub_resource type="StandardMaterial3D" id="%s"]\nalbedo_color = %s\n%s\n\n' % (k, cor, extra)
 
+    # A forma de colisão do corpo existe nas DUAS versões (jogador e rival):
+    # ambos são CharacterBody3D e usam move_and_slide() para bater nos karts.
+    out += '[sub_resource type="BoxShape3D" id="Shape_corpo"]\nsize = Vector3(1.5, 0.9, 2.9)\n\n'
     if com_script:
-        out += '[sub_resource type="BoxShape3D" id="Shape_corpo"]\nsize = Vector3(1.5, 0.9, 2.9)\n\n'
         # material das partículas: sem sombra, usa a cor da partícula
         out += ('[sub_resource type="StandardMaterial3D" id="Mat_part"]\n'
                 'shading_mode = 0\nvertex_color_use_as_albedo = true\n'
@@ -132,10 +159,18 @@ def build(cor_corpo, cor_accent, cor_suit, cor_capacete, com_script):
                 'gravity = Vector3(0, -4, 0)\nscale_min = 0.2\nscale_max = 0.5\n'
                 'color = Color(0.9, 0.9, 0.9, 0.8)\n\n')
 
-    root = "CharacterBody3D" if com_script else "Node3D"
-    out += '[node name="Kart" type="%s"]\n' % root
+    # O rival recebe o script npc.gd (que é CharacterBody3D) na cena da pista,
+    # então TODA versão precisa ser CharacterBody3D — senão o Godot recusa o
+    # script no carregamento e o rival fica morto.
+    # Camadas de colisão (bits): 1=Pista, 2=Karts, 3=Itens.
+    #   jogador = 3 (Pista+Karts): anda na pista E bate nos karts;
+    #   rival   = 2 (só Karts): bate nos karts e ignora a pista (flutua).
+    out += '[node name="Kart" type="CharacterBody3D"]\n'
     if com_script:
         out += 'script = ExtResource("1_kart")\n'
+        out += 'collision_layer = 3\ncollision_mask = 3\n'
+    else:
+        out += 'collision_layer = 2\ncollision_mask = 2\n'
     out += "\n"
 
     # Nó "Visual": embrulha toda a malha (a física fica no nó raiz).
@@ -146,10 +181,11 @@ def build(cor_corpo, cor_accent, cor_suit, cor_capacete, com_script):
         out += 'mesh = SubResource("%s")\n' % mesh
         out += 'material_override = SubResource("%s")\n\n' % mat
 
+    # Colisão do corpo (nas duas versões).
+    out += '[node name="Colisao" type="CollisionShape3D" parent="."]\n'
+    out += 'transform = %s\n' % xf(I, (0, 0.45, 0))
+    out += 'shape = SubResource("Shape_corpo")\n\n'
     if com_script:
-        out += '[node name="Colisao" type="CollisionShape3D" parent="."]\n'
-        out += 'transform = %s\n' % xf(I, (0, 0.45, 0))
-        out += 'shape = SubResource("Shape_corpo")\n\n'
         out += '[node name="Motor" type="AudioStreamPlayer" parent="."]\n'
         out += 'stream = ExtResource("2_motor")\nvolume_db = -13.0\nbus = "SFX"\n\n'
         out += '[node name="SomBoost" type="AudioStreamPlayer" parent="."]\n'

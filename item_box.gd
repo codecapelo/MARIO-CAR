@@ -1,68 +1,80 @@
 extends Area3D
 
 # ============================================================
-#  CAIXA DE ITEM (turbo)
-#  Fica girando e brilhando. Quando o kart passa por cima,
-#  dá um TURBO, solta um flash de partículas, some, e reaparece
-#  depois de alguns segundos.
+#  CAIXA DE ITEM "?"
+#  Fica girando e mudando de cor. Quando o JOGADOR passa por cima,
+#  ela sorteia um item (a chance depende da posição na corrida —
+#  quem está atrás ganha itens melhores), guarda no kart, some, e
+#  reaparece depois de alguns segundos.
+#
+#  Os rivais NÃO consomem as caixas: eles têm o próprio sistema de
+#  itens (por tempo) no npc.gd, para as caixas serem sempre do jogador.
 # ============================================================
 
 @export var reaparece: float = 4.0
-@export var duracao_boost: float = 2.0
-@export var tipo: String = "turbo"   # "turbo", "estrela" ou "raio"
 
-@onready var malha: Node3D = get_node_or_null("Malha")
+@onready var malha: MeshInstance3D = get_node_or_null("Malha")
 @onready var som: Node = get_node_or_null("Som")
 @onready var brilho: GPUParticles3D = get_node_or_null("Brilho")
 
 var ativo: bool = true
+var _mat: StandardMaterial3D
+var _t: float = 0.0
 
 
 func _ready() -> void:
 	body_entered.connect(_ao_entrar)
-	_pintar()
-
-
-# Cada tipo de item tem uma cor própria, para o jogador reconhecer de longe.
-func _pintar() -> void:
-	var cor := Color(1.0, 0.55, 0.0)        # turbo = laranja
-	match tipo:
-		"estrela":
-			cor = Color(1.0, 0.85, 0.1)     # estrela = dourado
-		"raio":
-			cor = Color(0.35, 0.6, 1.0)     # raio = azul
-	var m := get_node_or_null("Malha") as MeshInstance3D
-	if m:
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = cor
-		mat.emission_enabled = true
-		mat.emission = cor
-		mat.emission_energy_multiplier = 2.2
-		mat.metallic = 0.2
-		mat.roughness = 0.3
-		m.material_override = mat
+	# Material próprio (a cor muda no _process para o efeito "?").
+	_mat = StandardMaterial3D.new()
+	_mat.emission_enabled = true
+	_mat.emission_energy_multiplier = 2.2
+	_mat.metallic = 0.2
+	_mat.roughness = 0.3
+	if malha:
+		malha.material_override = _mat
 
 
 func _process(delta: float) -> void:
-	# Gira e flutua de leve para "chamar atenção".
 	if malha:
 		malha.rotate_y(delta * 2.5)
+	# Cor "arco-íris" girando devagar — só quando a caixa está disponível.
+	if _mat:
+		if ativo:
+			_t = fmod(_t + delta * 0.35, 1.0)
+			var cor := Color.from_hsv(_t, 0.8, 1.0)
+			_mat.albedo_color = cor
+			_mat.emission = cor
+		else:
+			_mat.albedo_color = Color(0.2, 0.2, 0.2)
+			_mat.emission = Color(0.05, 0.05, 0.05)
 
 
 func _ao_entrar(corpo: Node) -> void:
-	# Só funciona se o que entrou souber receber turbo (o kart do jogador).
-	if ativo and corpo.has_method("pegar_item"):
-		corpo.pegar_item(tipo)
-		ativo = false
-		if malha:
-			malha.visible = false
-		if som:
-			som.play()
-		if brilho:
-			brilho.restart()        # dispara o flash de partículas (one-shot)
-			brilho.emitting = true
-		# Espera e reaparece.
-		await get_tree().create_timer(reaparece).timeout
-		ativo = true
-		if malha:
-			malha.visible = true
+	if not ativo:
+		return
+	# Só o jogador pega das caixas (rivais têm itens próprios).
+	if not corpo.is_in_group("jogador") or not corpo.has_method("pegar_item"):
+		return
+	# Se o jogador já está segurando um item, a caixa não é consumida.
+	if corpo.has_method("pode_pegar_item") and not corpo.pode_pegar_item():
+		return
+
+	# Sorteia o item conforme a posição do jogador na corrida.
+	var tipo := "turbo"
+	var pista := get_tree().get_first_node_in_group("pista")
+	if pista and pista.has_method("sortear_item_para"):
+		tipo = pista.sortear_item_para(corpo)
+	corpo.pegar_item(tipo)
+
+	ativo = false
+	if malha:
+		malha.visible = false
+	if som:
+		som.play()
+	if brilho:
+		brilho.restart()
+		brilho.emitting = true
+	await get_tree().create_timer(reaparece).timeout
+	ativo = true
+	if malha:
+		malha.visible = true

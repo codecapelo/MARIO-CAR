@@ -55,6 +55,13 @@ var driftando: bool = false
 var drift_sentido: float = 0.0   # -1 esquerda, +1 direita (travado ao iniciar)
 var drift_carga: float = 0.0     # segundos acumulados derrapando
 
+# --- itens (segura um item e usa quando quiser, igual ao Mario Kart) ---
+var item_guardado: String = ""   # "" = nenhum; senão "turbo"/"estrela"/"raio"/"banana"/"casco"
+var _rodopio_timer: float = 0.0  # tempo rodopiando (atingido por banana/casco)
+var _rodopiando: bool = false
+var _raio_timer: float = 0.0     # tempo lento por causa do raio
+var _col_timer: float = 0.0      # respiro entre reações de colisão
+
 var no_chao: bool = false
 var chao_normal: Vector3 = Vector3.UP
 var _transform_inicial: Transform3D
@@ -90,8 +97,21 @@ func _ready() -> void:
 	floor_max_angle = PI          # qualquer inclinação conta como "chão"
 	floor_stop_on_slope = false
 	_coletar_rodas()
+	_aplicar_cor()                 # pinta o kart com a cor escolhida no menu
 	if motor:
 		motor.play()               # o loop agora vem da importação do .wav
+
+
+# Pinta o corpo do kart com a cor que o jogador escolheu nas opções.
+func _aplicar_cor() -> void:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Jogo.cor_kart()
+	mat.metallic = 0.35
+	mat.roughness = 0.35
+	for nome in ["Chassi", "Corpo", "AsaTras", "PodE", "PodD"]:
+		var m := get_node_or_null("Visual/" + nome) as MeshInstance3D
+		if m:
+			m.material_override = mat
 
 
 func _teto() -> float:
@@ -100,6 +120,8 @@ func _teto() -> float:
 		teto += boost_extra
 	if estrela_timer > 0.0:
 		teto += _estrela_extra
+	if _raio_timer > 0.0:
+		teto *= 0.5            # atingido pelo raio: anda pela metade
 	return teto
 
 
@@ -113,11 +135,25 @@ func _physics_process(delta: float) -> void:
 	if _checar_resgate(delta):
 		return
 
+	# Usar o item guardado (tecla E / botão L1).
+	if Input.is_action_just_pressed("usar_item"):
+		_usar_item()
+
+	# Rodopio (depois de levar banana/casco): perde o controle por um instante.
+	_rodopiando = _rodopio_timer > 0.0
+	if _rodopiando:
+		_rodopio_timer -= delta
+	if _raio_timer > 0.0:
+		_raio_timer -= delta
+	if _col_timer > 0.0:
+		_col_timer -= delta
+
 	_detectar_chao()
 	_acelerar_ou_frear(delta)
 	_atualizar_drift(delta)
 	_virar(delta)
 	_mover(delta)
+	_processar_colisoes()
 	if boost_timer > 0.0:
 		boost_timer -= delta
 	if estrela_timer > 0.0:
@@ -146,6 +182,11 @@ func _detectar_chao() -> void:
 
 
 func _acelerar_ou_frear(delta: float) -> void:
+	# Rodopiando: o jogador não controla; a velocidade cai sozinha.
+	if _rodopiando:
+		_acelerando = false
+		velocidade_atual = move_toward(velocidade_atual, 0.0, atrito * 2.0 * delta)
+		return
 	var teto := _teto()
 	_acelerando = Input.is_action_pressed("acelerar")
 	if _acelerando:
@@ -165,6 +206,10 @@ func _acelerar_ou_frear(delta: float) -> void:
 
 # Gira em torno do "para cima" ATUAL do kart (funciona inclinado / no loop).
 func _virar(delta: float) -> void:
+	# Rodopiando: gira rápido no lugar (pião), ignorando o comando.
+	if _rodopiando:
+		rotate(global_transform.basis.y.normalized(), TAU * 1.4 * delta)
+		return
 	if absf(velocidade_atual) < velocidade_minima_para_virar:
 		return
 	var sentido := Input.get_axis("virar_esquerda", "virar_direita")
@@ -182,6 +227,10 @@ func _virar(delta: float) -> void:
 
 # Inicia/mantém o drift e converte o tempo derrapando em mini-turbo.
 func _atualizar_drift(delta: float) -> void:
+	if _rodopiando:
+		if driftando:
+			_soltar_drift()
+		return
 	if not no_chao:
 		return
 	var quer := Input.is_action_pressed("drift")
@@ -356,15 +405,100 @@ func aplicar_boost(duracao: float = 2.0) -> void:
 	_tremer_camera(0.3)
 
 
-# Chamado pela caixa de item. Cada "tipo" dá um poder diferente.
+# Chamado pela caixa de item: GUARDA o item (não usa na hora).
 func pegar_item(tipo: String) -> void:
-	match tipo:
+	if item_guardado == "":
+		item_guardado = tipo
+
+
+# A caixa pergunta isto antes de se entregar: só pega se a mão estiver livre.
+func pode_pegar_item() -> bool:
+	return item_guardado == ""
+
+
+# Usa o item guardado (tecla E / botão). Cada tipo faz uma coisa.
+func _usar_item() -> void:
+	if item_guardado == "":
+		return
+	var t := item_guardado
+	item_guardado = ""
+	match t:
 		"estrela":
 			ativar_estrela(6.0)
 		"raio":
 			disparar_raio()
+		"banana":
+			_soltar_banana()
+		"casco":
+			_disparar_casco()
 		_:
 			aplicar_boost(2.0)   # turbo comum
+
+
+# Solta uma banana logo atrás do kart.
+func _soltar_banana() -> void:
+	var cena := load("res://banana.tscn")
+	if cena == null:
+		return
+	var b := cena.instantiate()
+	b.dono = self
+	var frente := -global_transform.basis.z
+	frente.y = 0.0
+	get_tree().current_scene.add_child(b)
+	b.global_position = global_position - frente.normalized() * 2.6 + Vector3.UP * 0.1
+
+
+# Dispara um casco reto para frente.
+func _disparar_casco() -> void:
+	var cena := load("res://casco.tscn")
+	if cena == null:
+		return
+	var c := cena.instantiate()
+	var frente := -global_transform.basis.z
+	frente.y = 0.0
+	frente = frente.normalized()
+	c.dono = self
+	c.direcao = frente
+	get_tree().current_scene.add_child(c)
+	c.global_position = global_position + frente * 2.6 + Vector3.UP * 0.4
+	if som_boost:
+		som_boost.play()
+
+
+# Faz o kart rodopiar (perde o controle por um instante). A estrela protege.
+func rodopiar(dur: float = 0.9) -> void:
+	if estrela_timer > 0.0:
+		return
+	_rodopio_timer = maxf(_rodopio_timer, dur)
+	_tremer_camera(0.25)
+
+
+# Atingido pelo raio: fica lento por um tempo (a estrela protege).
+func levar_raio(dur: float) -> void:
+	if estrela_timer > 0.0:
+		return
+	_raio_timer = maxf(_raio_timer, dur)
+	velocidade_atual = minf(velocidade_atual, velocidade_maxima * 0.5)
+	_tremer_camera(0.2)
+
+
+# Reage a bater em outro kart: com estrela, derruba o rival; sem, perde
+# um pouco de velocidade. O respiro (_col_timer) evita repetir todo frame.
+func _processar_colisoes() -> void:
+	if _col_timer > 0.0:
+		return
+	for i in get_slide_collision_count():
+		var c := get_slide_collision(i)
+		var outro := c.get_collider()
+		if outro and outro != self and outro.is_in_group("corredores"):
+			if estrela_timer > 0.0:
+				if outro.has_method("rodopiar"):
+					outro.rodopiar(0.8)
+			else:
+				velocidade_atual *= 0.9
+			_tremer_camera(0.12)
+			_col_timer = 0.25
+			return
 
 
 # ESTRELA: um super-turbo — anda MUITO mais rápido e por mais tempo.
