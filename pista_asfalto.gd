@@ -11,6 +11,12 @@ extends MeshInstance3D
 #  seguindo a Curve3D do TrackPath e FECHANDO o laço (o segmento
 #  do último ponto de volta ao primeiro, que o baked deixa de fora).
 #  Geramos também a COLISÃO (trimesh) para o kart continuar no chão.
+#
+#  IMPORTANTE: a lateral (direção da largura) é calculada UMA VEZ
+#  POR VÉRTICE (diferença central), e os vértices de borda são
+#  COMPARTILHADOS entre faixas vizinhas. Se calculássemos a lateral
+#  por segmento, em curvas a borda de um quad não casaria com o
+#  começo do próximo e abriria fendas (buracos) na pista.
 # ============================================================
 
 @export var path_node: NodePath = NodePath("../TrackPath")
@@ -29,7 +35,7 @@ func _ready() -> void:
 	if n < 2:
 		return
 
-	# Amostra a curva FECHADA (inclui o trecho último->primeiro).
+	# 1) Amostra a curva FECHADA (inclui o trecho último->primeiro).
 	var centro: Array[Vector3] = []
 	for i in n:
 		var a := curva.get_point_position(i)
@@ -41,31 +47,52 @@ func _ready() -> void:
 			var t := float(k) / float(passos_por_trecho)
 			centro.append(_bezier(a, a_out, b_in, b, t))
 
+	var m := centro.size()
+	if m < 3:
+		return
+
+	# 2) Borda esquerda/direita com UMA lateral POR VÉRTICE (diferença
+	#    central), compartilhada pelas faixas vizinhas -> sem fendas.
+	var esq: Array[Vector3] = []
+	var dir: Array[Vector3] = []
+	for i in m:
+		var ant := centro[(i - 1 + m) % m]
+		var prox := centro[(i + 1) % m]
+		var tang := prox - ant
+		tang.y = 0.0
+		if tang.length() < 1e-6:
+			tang = Vector3.FORWARD
+		tang = tang.normalized()
+		var lat := Vector3.UP.cross(tang).normalized()
+		esq.append(centro[i] + lat * meia_largura)
+		dir.append(centro[i] - lat * meia_largura)
+
+	# 3) Constrói a fita: topo + saias laterais, reusando os vértices.
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var m := centro.size()
 	var baixo := Vector3(0.0, -espessura, 0.0)
-	for idx in m:
-		var c0 := centro[idx]
-		var c1 := centro[(idx + 1) % m]
-		var fwd := c1 - c0
-		fwd.y = 0.0
-		if fwd.length() < 1e-5:
-			continue
-		fwd = fwd.normalized()
-		var lat := Vector3.UP.cross(fwd).normalized()
-		var l0 := c0 + lat * meia_largura
-		var r0 := c0 - lat * meia_largura
-		var l1 := c1 + lat * meia_largura
-		var r1 := c1 - lat * meia_largura
-		# topo (visto de cima)
-		_quad(st, l0, l1, r1, r0, Vector3.UP)
+	for i in m:
+		var j := (i + 1) % m
+		var le := esq[i]
+		var lj := esq[j]
+		var re := dir[i]
+		var rj := dir[j]
+		# topo (normal para cima)
+		_quad(st, le, lj, rj, re, Vector3.UP)
 		# saia esquerda e direita (parecer um deck sólido)
-		_quad(st, l0 + baixo, l1 + baixo, l1, l0, lat)
-		_quad(st, r0, r1, r1 + baixo, r0 + baixo, -lat)
+		var nl := (le - centro[i]).normalized()
+		var nr := (re - centro[i]).normalized()
+		_quad(st, le + baixo, lj + baixo, lj, le, nl)
+		_quad(st, re, rj, rj + baixo, re + baixo, nr)
 
 	st.generate_tangents()
 	mesh = st.commit()
+
+	# Material visível dos dois lados (seguro contra qualquer face invertida).
+	if material_override and material_override is BaseMaterial3D:
+		var mm: BaseMaterial3D = material_override.duplicate()
+		mm.cull_mode = BaseMaterial3D.CULL_DISABLED
+		material_override = mm
 
 	# Colisão para o raycast do kart achar o chão.
 	create_trimesh_collision()
