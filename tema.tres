@@ -1,4 +1,22 @@
-[gd_resource type="Theme" load_steps=5 format=3]
+[gd_resource type="Theme" load_steps=6 format=3]
+
+[sub_resource type="StyleBoxFlat" id="sb_panel"]
+bg_color = Color(0.06, 0.1, 0.22, 0.98)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.85, 0.3, 0.85)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+content_margin_left = 34.0
+content_margin_top = 28.0
+content_margin_right = 34.0
+content_margin_bottom = 28.0
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 18
 
 [sub_resource type="StyleBoxFlat" id="sb_normal"]
 bg_color = Color(0.74, 0.12, 0.1, 0.95)
@@ -65,3 +83,4 @@ Button/styles/normal = SubResource("sb_normal")
 Button/styles/hover = SubResource("sb_hover")
 Button/styles/pressed = SubResource("sb_pressed")
 Button/styles/focus = SubResource("sb_focus")
+PanelContainer/styles/panel = SubResource("sb_panel")

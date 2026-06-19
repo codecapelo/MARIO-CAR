@@ -9,24 +9,57 @@ extends Control
 
 @onready var painel_config: Control = $PainelConfig
 @onready var painel_controles: Control = $PainelControles
+@onready var dim: ColorRect = $DimPaineis
 
 
 func _ready() -> void:
 	Jogo.estado = Jogo.Estado.MENU
 	# Liga os botões principais.
 	$Centro/Botoes/Jogar.pressed.connect(_ao_jogar)
-	$Centro/Botoes/Config.pressed.connect(func(): painel_config.visible = true)
-	$Centro/Botoes/Controles.pressed.connect(func(): painel_controles.visible = true)
+	$Centro/Botoes/Config.pressed.connect(func(): _abrir_painel(painel_config))
+	$Centro/Botoes/Controles.pressed.connect(func(): _abrir_painel(painel_controles))
 	$Centro/Botoes/Sair.pressed.connect(func(): get_tree().quit())
 	$Centro/Botoes/Jogar.grab_focus()   # foco para teclado/gamepad
 
-	# Painéis.
+	# Painéis começam escondidos.
 	painel_config.visible = false
 	painel_controles.visible = false
+	dim.visible = false
 	_montar_config()
-	painel_controles.get_node("Caixa/Voltar").pressed.connect(func():
-		painel_controles.visible = false
-		$Centro/Botoes/Jogar.grab_focus())
+	painel_controles.get_node("Caixa/Voltar").pressed.connect(func(): _fechar_painel(painel_controles))
+
+
+# ------------------------------------------------------------
+#  ABRIR / FECHAR PAINÉIS
+#  Esconde o menu de fundo e mostra um escurecimento para o
+#  painel não "vazar" o título e os botões por trás.
+# ------------------------------------------------------------
+func _abrir_painel(p: Control) -> void:
+	$Centro.visible = false
+	dim.visible = true
+	p.visible = true
+	# Foca o primeiro botão do painel (bom para teclado/gamepad).
+	var voltar := p.get_node_or_null("Caixa/Voltar")
+	if voltar:
+		voltar.grab_focus()
+
+
+func _fechar_painel(p: Control) -> void:
+	p.visible = false
+	dim.visible = false
+	$Centro.visible = true
+	$Centro/Botoes/Jogar.grab_focus()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	# Esc / "voltar" fecha o painel aberto.
+	if event.is_action_pressed("ui_cancel"):
+		if painel_config.visible:
+			_fechar_painel(painel_config)
+			get_viewport().set_input_as_handled()
+		elif painel_controles.visible:
+			_fechar_painel(painel_controles)
+			get_viewport().set_input_as_handled()
 
 
 func _ao_jogar() -> void:
@@ -66,8 +99,7 @@ func _montar_config() -> void:
 
 	c.get_node("Caixa/Voltar").pressed.connect(func():
 		Jogo.salvar()
-		painel_config.visible = false
-		$Centro/Botoes/Jogar.grab_focus())
+		_fechar_painel(painel_config))
 
 
 func _ligar_slider(s: HSlider, valor: float, callback: Callable) -> void:

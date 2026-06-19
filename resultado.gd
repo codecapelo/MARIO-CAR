@@ -27,14 +27,18 @@ func _ready() -> void:
 		txt += "\n\nVoltas:"
 		for i in Jogo.resultado_tempos_voltas.size():
 			txt += "\n  %d: %s" % [i + 1, _formatar(Jogo.resultado_tempos_voltas[i])]
-	$Centro/Tempos.text = txt
+	$Centro/Cartao/Colunas/Tempos.text = txt
 
 	# Classificação (1º, 2º, ...).
 	if not Jogo.resultado_classificacao.is_empty():
 		var cl := "Classificação:"
 		for i in Jogo.resultado_classificacao.size():
 			cl += "\n  %dº  %s" % [i + 1, Jogo.resultado_classificacao[i]]
-		$Centro/Classificacao.text = cl
+		$Centro/Cartao/Colunas/Classificacao.text = cl
+	else:
+		# Sem classificação: esconde a 2ª coluna e o separador.
+		$Centro/Cartao/Colunas/Sep.visible = false
+		$Centro/Cartao/Colunas/Classificacao.visible = false
 
 	# Botões.
 	$Centro/Botoes/Reiniciar.pressed.connect(func(): Transicao.trocar_cena(Jogo.cena_corrida_atual()))
