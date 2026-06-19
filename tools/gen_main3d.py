@@ -292,6 +292,7 @@ material_override = SubResource("Mat_montanha")
 [ext_resource type="AudioStream" path="res://assets/musica_corrida.wav" id="17_musica"]
 [ext_resource type="Script" path="res://minimapa.gd" id="18_mini"]
 [ext_resource type="Theme" path="res://tema.tres" id="19_tema"]
+[ext_resource type="Script" path="res://pista_asfalto.gd" id="20_asfalto"]
 
 [sub_resource type="PanoramaSkyMaterial" id="Sky_mat"]
 panorama = ExtResource("4_sky")
@@ -454,17 +455,10 @@ material_override = SubResource("Water_mat")
 [node name="TrackPath" type="Path3D" parent="."]
 curve = SubResource("Track_curve")
 
-[node name="Deck" type="CSGPolygon3D" parent="."]
-mode = 2
-polygon = PackedVector2Array(-8, -0.5, 8, -0.5, 8, 0, -8, 0)
-path_node = NodePath("../TrackPath")
-path_interval_type = 0
-path_interval = 2.0
-path_joined = true
-path_rotation = 1
-use_collision = true
-smooth_faces = false
-material = SubResource("Mat_asfalto")
+[node name="Deck" type="MeshInstance3D" parent="."]
+script = ExtResource("20_asfalto")
+material_override = SubResource("Mat_asfalto")
+meia_largura = 8.0
 
 [node name="LinhaCentro" type="CSGPolygon3D" parent="."]
 mode = 2
