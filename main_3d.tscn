@@ -1,4 +1,4 @@
-[gd_scene load_steps=43 format=3]
+[gd_scene load_steps=41 format=3]
 
 [ext_resource type="PackedScene" path="res://kart_3d.tscn" id="1_kart"]
 [ext_resource type="Script" path="res://camera_perseguidora.gd" id="2_cam"]
@@ -19,6 +19,7 @@
 [ext_resource type="Script" path="res://minimapa.gd" id="18_mini"]
 [ext_resource type="Theme" path="res://tema.tres" id="19_tema"]
 [ext_resource type="Script" path="res://pista_asfalto.gd" id="20_asfalto"]
+[ext_resource type="Script" path="res://pista_zebras.gd" id="21_zebras"]
 
 [sub_resource type="PanoramaSkyMaterial" id="Sky_mat"]
 panorama = ExtResource("4_sky")
@@ -45,7 +46,7 @@ glow_bloom = 0.1
 glow_hdr_threshold = 0.95
 glow_blend_mode = 1
 fog_enabled = true
-fog_mode = 1
+fog_mode = 0
 fog_light_color = Color(0.7, 0.8, 0.9, 1)
 fog_sun_scatter = 0.2
 fog_density = 0.0008
@@ -58,8 +59,8 @@ shader_parameter/normalmap = ExtResource("15_wnormal")
 
 [sub_resource type="PlaneMesh" id="Ocean_mesh"]
 size = Vector2(6000, 6000)
-subdivide_width = 400
-subdivide_depth = 400
+subdivide_width = 200
+subdivide_depth = 200
 
 [sub_resource type="StandardMaterial3D" id="Mat_asfalto"]
 albedo_texture = ExtResource("5_asfalto")
@@ -74,17 +75,6 @@ emission_enabled = true
 emission = Color(0.97, 0.85, 0.2, 1)
 emission_energy_multiplier = 0.5
 roughness = 0.6
-
-[sub_resource type="StandardMaterial3D" id="Mat_kerb_a"]
-albedo_color = Color(0.85, 0.12, 0.1, 1)
-roughness = 0.55
-
-[sub_resource type="StandardMaterial3D" id="Mat_kerb_b"]
-albedo_color = Color(0.95, 0.95, 0.96, 1)
-roughness = 0.55
-
-[sub_resource type="BoxMesh" id="Mesh_kerb"]
-size = Vector3(1.0, 0.12, 1.0)
 
 [sub_resource type="StandardMaterial3D" id="Mat_ponte"]
 albedo_color = Color(0.74, 0.12, 0.1, 1)
@@ -133,6 +123,7 @@ size = Vector3(9.0, 0.6, 10.0)
 size = Vector3(9.0, 0.6, 10.0)
 
 [sub_resource type="Curve3D" id="Track_curve"]
+bake_interval = 1.0
 _data = {
 "points": PackedVector3Array(-6.6654, -0.0, -15.4342, 6.6654, 0.0, 15.4342, 133.8368, 0.0, 0.0, 8.8531, -0.0, -13.453, -8.8531, 0.0, 13.453, 131.7803, 0.0, 54.5852, 17.0245, -0.0, -2.8259, -17.0245, 0.0, 2.8259, 80.718, 0.0, 80.718, 13.453, -0.0, 1.8019, -13.453, 0.0, -1.8019, 29.6331, 0.0, 71.5406, 11.0482, -0.0, -2.826, -11.0482, 0.0, 2.826, 0.0, 0.0, 69.9066, 14.5971, -0.0, -2.946, -14.5971, 0.0, 2.946, -36.6564, 0.0, 88.4964, 13.2273, -0.0, 6.7399, -13.2273, 0.0, -6.7399, -87.5825, 0.0, 87.5825, 3.1919, -0.0, 14.5971, -3.1919, 0.0, -14.5971, -116.0202, 0.0, 48.0571, -4.6061, -0.0, 14.1111, 4.6061, 0.0, -14.1111, -106.734, 0.0, 0.0, -5.3788, -0.0, 12.4102, 5.3788, 0.0, -12.4102, -88.3836, 0.0, -36.6097, -7.2278, -0.0, 12.0118, 7.2278, 0.0, -12.0118, -74.4613, 0.0, -74.4613, -12.4102, -0.0, 5.8436, 12.4102, 0.0, -5.8436, -45.017, 0.0, -108.6807, -12.9821, -0.0, -4.8853, 12.9821, 0.0, 4.8853, -0.0, 0.0, -109.5227, -9.0372, -0.0, -9.2166, 9.0372, 0.0, 9.2166, 32.8758, 0.0, -79.3691, -9.8187, -0.0, -6.8915, 9.8187, 0.0, 6.8915, 54.223, 0.0, -54.223, -13.269, -0.0, -9.0372, 13.269, 0.0, 9.0372, 91.788, 0.0, -38.0198),
 "tilts": PackedFloat32Array(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
@@ -162,6 +153,8 @@ directional_shadow_split_3 = 0.5
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -8, 0)
 mesh = SubResource("Ocean_mesh")
 material_override = SubResource("Water_mat")
+cast_shadow = 0
+extra_cull_margin = 4.0
 
 [node name="TrackPath" type="Path3D" parent="."]
 curve = SubResource("Track_curve")
@@ -181,13 +174,18 @@ path_joined = true
 path_rotation = 1
 smooth_faces = false
 material = SubResource("Mat_centro")
+cast_shadow = 0
 
-[node name="Kerbs" type="Node3D" parent="."]
+[node name="Zebras" type="MultiMeshInstance3D" parent="."]
+script = ExtResource("21_zebras")
+cor_a = Color(0.85, 0.12, 0.1, 1)
+cor_b = Color(0.95, 0.95, 0.96, 1)
 
 [node name="FinishLine" type="MeshInstance3D" parent="."]
 transform = Transform3D(-0.918, 0.0, -0.3965, 0.0, 1.0, -0.0, 0.3965, -0.0, -0.918, 133.8368, 0.05, 0.0)
 mesh = SubResource("Mesh_finish")
 material_override = SubResource("Mat_checker")
+cast_shadow = 0
 
 [node name="Rampa" type="StaticBody3D" parent="."]
 
@@ -579,1036 +577,93 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 140.5759, 1.4, 41.2197)
 [node name="Item12" parent="Itens" instance=ExtResource("12_item")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 143.4996, 1.4, 43.1437)
 
-[node name="KerbE0" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.9502, 0.0, -2.8879, 0.0, 1.0, -0.0, 0.3116, -0.0, -8.8069, 128.2886, 0.06, 6.5087)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD0" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.9502, 0.0, -2.8879, 0.0, 1.0, -0.0, 0.3116, -0.0, -8.8069, 142.1618, 0.06, 1.9595)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE1" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.9859, 0.0, -1.6845, 0.0, 1.0, -0.0, 0.1672, -0.0, -9.9357, 130.2262, 0.06, 14.4653)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD1" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.9859, 0.0, -1.6845, 0.0, 1.0, -0.0, 0.1672, -0.0, -9.9357, 144.6208, 0.06, 12.0247)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE2" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.9992, 0.0, -0.4104, 0.0, 1.0, -0.0, 0.0394, -0.0, -10.4143, 131.1364, 0.06, 23.3161)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD2" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.9992, 0.0, -0.4104, 0.0, 1.0, -0.0, 0.0394, -0.0, -10.4143, 145.725, 0.06, 22.7412)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE3" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.9959, 0.0, 0.9345, 0.0, 1.0, -0.0, -0.0909, 0.0, -10.2426, 130.9089, 0.06, 32.2966)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD3" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.9959, 0.0, 0.9345, 0.0, 1.0, -0.0, -0.0909, 0.0, -10.2426, 145.4485, 0.06, 33.6232)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE4" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.9703, 0.0, 2.3503, 0.0, 1.0, -0.0, -0.2421, 0.0, -9.4206, 129.5166, 0.06, 40.6463)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD4" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.9703, 0.0, 2.3503, 0.0, 1.0, -0.0, -0.2421, 0.0, -9.4206, 143.6824, 0.06, 44.1804)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE5" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.9006, 0.0, 3.8368, 0.0, 1.0, -0.0, -0.4347, 0.0, -7.9484, 127.0508, 0.06, 47.5904)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD5" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.9006, 0.0, 3.8368, 0.0, 1.0, -0.0, -0.4347, 0.0, -7.9484, 140.1991, 0.06, 53.9373)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE6" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.7488, 0.0, 5.9011, 0.0, 1.0, -0.0, -0.6628, 0.0, -6.6671, 123.4769, 0.06, 52.9522)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD6" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.7488, 0.0, 5.9011, 0.0, 1.0, -0.0, -0.6628, 0.0, -6.6671, 134.4096, 0.06, 62.6288)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE7" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.5952, 0.0, 8.0244, 0.0, 1.0, -0.0, -0.8035, 0.0, -5.9442, 117.903, 0.06, 57.9878)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD7" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.5952, 0.0, 8.0244, 0.0, 1.0, -0.0, -0.8035, 0.0, -5.9442, 126.5936, 0.06, 69.7196)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE8" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.4769, 0.0, 9.4401, 0.0, 1.0, -0.0, -0.8789, 0.0, -5.1223, 110.3704, 0.06, 62.7578)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD8" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.4769, 0.0, 9.4401, 0.0, 1.0, -0.0, -0.8789, 0.0, -5.1223, 117.3335, 0.06, 75.5904)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE9" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.3825, 0.0, 10.1483, 0.0, 1.0, -0.0, -0.924, 0.0, -4.2012, 101.6422, 0.06, 66.9117)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD9" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.3825, 0.0, 10.1483, 0.0, 1.0, -0.0, -0.924, 0.0, -4.2012, 107.2267, 0.06, 80.4014)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE10" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.2991, 0.0, 10.1489, 0.0, 1.0, -0.0, -0.9542, 0.0, -3.1812, 92.4927, 0.06, 70.24)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD10" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.2991, 0.0, 10.1489, 0.0, 1.0, -0.0, -0.9542, 0.0, -3.1812, 96.8596, 0.06, 84.1716)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE11" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.2134, 0.0, 9.4421, 0.0, 1.0, -0.0, -0.977, 0.0, -2.062, 83.6999, 0.06, 72.5947)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD11" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.2134, 0.0, 9.4421, 0.0, 1.0, -0.0, -0.977, 0.0, -2.062, 86.8149, 0.06, 86.8585)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE12" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.0486, 0.0, 9.1116, 0.0, 1.0, -0.0, -0.9988, 0.0, -0.4436, 75.9824, 0.06, 73.6399)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD12" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.0486, 0.0, 9.1116, 0.0, 1.0, -0.0, -0.9988, 0.0, -0.4436, 76.6924, 0.06, 88.2226)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE13" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.1259, 0.0, 9.4224, 0.0, 1.0, -0.0, -0.992, 0.0, 1.1955, 68.3456, 0.06, 73.3278)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD13" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.1259, 0.0, 9.4224, 0.0, 1.0, -0.0, -0.992, 0.0, 1.1955, 66.508, 0.06, 87.8117)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE14" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.2289, 0.0, 9.4231, 0.0, 1.0, -0.0, -0.9735, 0.0, 2.2155, 60.0373, 0.06, 71.8236)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD14" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.2289, 0.0, 9.4231, 0.0, 1.0, -0.0, -0.9735, 0.0, 2.2155, 56.6957, 0.06, 86.0361)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE15" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.276, 0.0, 9.1135, 0.0, 1.0, -0.0, -0.9612, 0.0, 2.6166, 51.4692, 0.06, 69.5902)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD15" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.276, 0.0, 9.1135, 0.0, 1.0, -0.0, -0.9612, 0.0, 2.6166, 47.4401, 0.06, 83.6232)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE16" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.2718, 0.0, 8.4938, 0.0, 1.0, -0.0, -0.9624, 0.0, 2.3987, 42.9736, 0.06, 67.1703)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD16" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.2718, 0.0, 8.4938, 0.0, 1.0, -0.0, -0.9624, 0.0, 2.3987, 39.0057, 0.06, 81.2207)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE17" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.2022, 0.0, 7.5639, 0.0, 1.0, -0.0, -0.9793, 0.0, 1.5618, 34.7457, 0.06, 65.1422)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD17" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.2022, 0.0, 7.5639, 0.0, 1.0, -0.0, -0.9793, 0.0, 1.5618, 31.7934, 0.06, 79.4406)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE18" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.1528, 0.0, 6.3429, 0.0, 1.0, -0.0, -0.9883, 0.0, 0.9807, 27.699, 0.06, 63.8548)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD18" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.1528, 0.0, 6.3429, 0.0, 1.0, -0.0, -0.9883, 0.0, 0.9807, 25.4682, 0.06, 78.2834)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE19" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.1753, 0.0, 5.3119, 0.0, 1.0, -0.0, -0.9845, 0.0, 0.9459, 22.2601, 0.06, 62.9559)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD19" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.1753, 0.0, 5.3119, 0.0, 1.0, -0.0, -0.9845, 0.0, 0.9459, 19.7005, 0.06, 77.3298)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE20" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.1533, 0.0, 4.6922, 0.0, 1.0, -0.0, -0.9882, 0.0, 0.728, 17.2898, 0.06, 62.1244)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD20" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.1533, 0.0, 4.6922, 0.0, 1.0, -0.0, -0.9882, 0.0, 0.728, 15.0514, 0.06, 76.5518)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE21" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.0727, 0.0, 4.4838, 0.0, 1.0, -0.0, -0.9974, 0.0, 0.3269, 12.2899, 0.06, 61.5503)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD21" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.0727, 0.0, 4.4838, 0.0, 1.0, -0.0, -0.9974, 0.0, 0.3269, 11.2283, 0.06, 76.1116)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE22" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.0548, 0.0, 4.6867, 0.0, 1.0, -0.0, -0.9985, 0.0, -0.2573, 6.95, 0.06, 61.5085)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD22" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.0548, 0.0, 4.6867, 0.0, 1.0, -0.0, -0.9985, 0.0, -0.2573, 7.7505, 0.06, 76.0865)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE23" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.1898, 0.0, 5.3009, 0.0, 1.0, -0.0, -0.9818, 0.0, -1.0248, 1.1629, 0.06, 62.2466)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD23" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.1898, 0.0, 5.3009, 0.0, 1.0, -0.0, -0.9818, 0.0, -1.0248, 3.9341, 0.06, 76.5812)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE24" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.3625, 0.0, 5.7593, 0.0, 1.0, -0.0, -0.932, 0.0, -2.2398, -5.4149, 0.06, 64.1798)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD24" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.3625, 0.0, 5.7593, 0.0, 1.0, -0.0, -0.932, 0.0, -2.2398, -0.1229, 0.06, 77.787)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE25" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.5018, 0.0, 5.8575, 0.0, 1.0, -0.0, -0.865, 0.0, -3.3979, -12.0169, 0.06, 67.3794)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD25" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.5018, 0.0, 5.8575, 0.0, 1.0, -0.0, -0.865, 0.0, -3.3979, -4.6909, 0.06, 80.0083)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE26" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.5491, 0.0, 6.0604, 0.0, 1.0, -0.0, -0.8357, 0.0, -3.9822, -18.0924, 0.06, 71.1411)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD26" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.5491, 0.0, 6.0604, 0.0, 1.0, -0.0, -0.8357, 0.0, -3.9822, -10.075, 0.06, 83.3428)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE27" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.5312, 0.0, 6.368, 0.0, 1.0, -0.0, -0.8472, 0.0, -3.9926, -23.9367, 0.06, 74.8911)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD27" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.5312, 0.0, 6.368, 0.0, 1.0, -0.0, -0.8472, 0.0, -3.9926, -16.1812, 0.06, 87.2609)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE28" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.4513, 0.0, 6.7802, 0.0, 1.0, -0.0, -0.8924, 0.0, -3.4291, -29.6748, 0.06, 78.1299)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD28" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.4513, 0.0, 6.7802, 0.0, 1.0, -0.0, -0.8924, 0.0, -3.4291, -23.0856, 0.06, 91.1584)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE29" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.2996, 0.0, 7.2971, 0.0, 1.0, -0.0, -0.9541, 0.0, -2.2918, -35.3356, 0.06, 80.43)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD29" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.2996, 0.0, 7.2971, 0.0, 1.0, -0.0, -0.9541, 0.0, -2.2918, -30.9608, 0.06, 94.3592)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE30" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.1768, 0.0, 8.2391, 0.0, 1.0, -0.0, -0.9842, 0.0, -1.4802, -41.9083, 0.06, 82.0231)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD30" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.1768, 0.0, 8.2391, 0.0, 1.0, -0.0, -0.9842, 0.0, -1.4802, -39.3267, 0.06, 96.393)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE31" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.1288, 0.0, 9.1822, 0.0, 1.0, -0.0, -0.9917, 0.0, -1.1928, -49.9335, 0.06, 83.2539)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD31" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.1288, 0.0, 9.1822, 0.0, 1.0, -0.0, -0.9917, 0.0, -1.1928, -48.0528, 0.06, 97.7323)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE32" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.0655, 0.0, 9.5945, 0.0, 1.0, -0.0, -0.9979, 0.0, -0.6293, -58.4982, 0.06, 84.0848)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD32" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.0655, 0.0, 9.5945, 0.0, 1.0, -0.0, -0.9979, 0.0, -0.6293, -57.5426, 0.06, 98.6535)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE33" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.0222, 0.0, 9.4758, 0.0, 1.0, -0.0, -0.9998, 0.0, 0.2101, -67.027, 0.06, 84.2724)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD33" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.0222, 0.0, 9.4758, 0.0, 1.0, -0.0, -0.9998, 0.0, 0.2101, -67.3506, 0.06, 98.8689)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE34" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.1485, 0.0, 8.8261, 0.0, 1.0, -0.0, -0.9889, 0.0, 1.3256, -74.9036, 0.06, 83.6133)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD34" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.1485, 0.0, 8.8261, 0.0, 1.0, -0.0, -0.9889, 0.0, 1.3256, -77.072, 0.06, 98.0514)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE35" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.3349, 0.0, 7.6455, 0.0, 1.0, -0.0, -0.9423, 0.0, 2.717, -81.4623, 0.06, 82.0102)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD35" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.3349, 0.0, 7.6455, 0.0, 1.0, -0.0, -0.9423, 0.0, 2.717, -86.3513, 0.06, 95.7673)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE36" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.549, 0.0, 6.7367, 0.0, 1.0, -0.0, -0.8358, 0.0, 4.4245, -86.8139, 0.06, 79.3537)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD36" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.549, 0.0, 6.7367, 0.0, 1.0, -0.0, -0.8358, 0.0, 4.4245, -94.8288, 0.06, 91.557)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE37" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.6877, 0.0, 6.3071, 0.0, 1.0, -0.0, -0.726, 0.0, 5.9745, -92.0722, 0.06, 75.1561)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD37" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.6877, 0.0, 6.3071, 0.0, 1.0, -0.0, -0.726, 0.0, 5.9745, -102.1127, 0.06, 85.7556)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE38" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.7816, 0.0, 5.6575, 0.0, 1.0, -0.0, -0.6237, 0.0, 7.0899, -97.1387, 0.06, 69.6217)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD38" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.7816, 0.0, 5.6575, 0.0, 1.0, -0.0, -0.6237, 0.0, 7.0899, -108.5507, 0.06, 78.7281)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE39" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.8514, 0.0, 4.7877, 0.0, 1.0, -0.0, -0.5245, 0.0, 7.7709, -101.6513, 0.06, 63.2011)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD39" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.8514, 0.0, 4.7877, 0.0, 1.0, -0.0, -0.5245, 0.0, 7.7709, -114.0815, 0.06, 70.8595)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE40" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9081, 0.0, 3.6979, 0.0, 1.0, -0.0, -0.4188, 0.0, 8.0173, -105.3172, 0.06, 56.3823)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD40" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9081, 0.0, 3.6979, 0.0, 1.0, -0.0, -0.4188, 0.0, 8.0173, -118.5749, 0.06, 62.4973)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE41" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9565, 0.0, 2.3881, 0.0, 1.0, -0.0, -0.2917, 0.0, 7.8293, -107.8896, 0.06, 49.6915)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD41" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9565, 0.0, 2.3881, 0.0, 1.0, -0.0, -0.2917, 0.0, 7.8293, -121.8545, 0.06, 53.951)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE42" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9953, 0.0, 0.7699, 0.0, 1.0, -0.0, -0.0963, 0.0, 7.9542, -109.1243, 0.06, 43.5297)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD42" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9953, 0.0, 0.7699, 0.0, 1.0, -0.0, -0.0963, 0.0, 7.9542, -123.6564, 0.06, 44.9363)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE43" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9963, 0.0, -0.7339, -0.0, 1.0, -0.0, 0.0861, 0.0, 8.4893, -109.1348, 0.06, 36.9562)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD43" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9963, 0.0, -0.7339, -0.0, 1.0, -0.0, 0.0861, 0.0, 8.4893, -123.6805, 0.06, 35.6988)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE44" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9789, 0.0, -1.8237, -0.0, 1.0, -0.0, 0.2044, 0.0, 8.7357, -108.0321, 0.06, 29.538)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD44" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9789, 0.0, -1.8237, -0.0, 1.0, -0.0, 0.2044, 0.0, 8.7357, -122.324, 0.06, 26.5544)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE45" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9611, 0.0, -2.4995, -0.0, 1.0, -0.0, 0.2763, 0.0, 8.6936, -106.0839, 0.06, 21.6838)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD45" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9611, 0.0, -2.4995, -0.0, 1.0, -0.0, 0.2763, 0.0, 8.6936, -120.1154, 0.06, 17.6496)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE46" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9496, 0.0, -2.7613, -0.0, 1.0, -0.0, 0.3135, 0.0, 8.3629, -103.6385, 0.06, 13.7553)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD46" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9496, 0.0, -2.7613, -0.0, 1.0, -0.0, 0.3135, 0.0, 8.3629, -117.5023, 0.06, 9.1776)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE47" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9476, 0.0, -2.6092, -0.0, 1.0, -0.0, 0.3193, 0.0, 7.7436, -101.0706, 0.06, 6.0539)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD47" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9476, 0.0, -2.6092, -0.0, 1.0, -0.0, 0.3193, 0.0, 7.7436, -114.9062, 0.06, 1.3919)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE48" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9339, 0.0, -2.6885, -0.0, 1.0, -0.0, 0.3577, 0.0, 7.0197, -98.6243, 0.06, -0.7639)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD48" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9339, 0.0, -2.6885, -0.0, 1.0, -0.0, 0.3577, 0.0, 7.0197, -112.2585, 0.06, -5.9858)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE49" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9003, 0.0, -3.1453, -0.0, 1.0, -0.0, 0.4353, 0.0, 6.5057, -96.0645, 0.06, -6.7)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD49" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9003, 0.0, -3.1453, -0.0, 1.0, -0.0, 0.4353, 0.0, 6.5057, -109.2089, 0.06, -13.0549)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE50" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.8756, 0.0, -3.4071, -0.0, 1.0, -0.0, 0.4831, 0.0, 6.175, -93.0949, 0.06, -12.4473)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD50" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.8756, 0.0, -3.4071, -0.0, 1.0, -0.0, 0.4831, 0.0, 6.175, -105.8782, 0.06, -19.5006)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE51" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.8664, 0.0, -3.4741, -0.0, 1.0, -0.0, 0.4994, 0.0, 6.0276, -89.8536, 0.06, -18.1952)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD51" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.8664, 0.0, -3.4741, -0.0, 1.0, -0.0, 0.4994, 0.0, 6.0276, -102.503, 0.06, -25.4859)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE52" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.8755, 0.0, -3.3461, -0.0, 1.0, -0.0, 0.4832, 0.0, 6.0635, -86.508, 0.06, -24.1264)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD52" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.8755, 0.0, -3.3461, -0.0, 1.0, -0.0, 0.4832, 0.0, 6.0635, -99.2907, 0.06, -31.1807)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE53" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9011, 0.0, -3.0233, -0.0, 1.0, -0.0, 0.4336, 0.0, 6.2826, -83.2591, 0.06, -30.4237)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD53" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9011, 0.0, -3.0233, -0.0, 1.0, -0.0, 0.4336, 0.0, 6.2826, -96.4151, 0.06, -36.7546)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE54" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9342, 0.0, -2.4929, -0.0, 1.0, -0.0, 0.3567, 0.0, 6.5299, -80.3651, 0.06, -37.1455)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD54" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9342, 0.0, -2.4929, -0.0, 1.0, -0.0, 0.3567, 0.0, 6.5299, -94.005, 0.06, -42.3526)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE55" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9544, 0.0, -2.0768, -0.0, 1.0, -0.0, 0.2987, 0.0, 6.6362, -78.0213, 0.06, -43.8987)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD55" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9544, 0.0, -2.0768, -0.0, 1.0, -0.0, 0.2987, 0.0, 6.6362, -91.955, 0.06, -48.2592)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE56" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9599, 0.0, -1.9488, -0.0, 1.0, -0.0, 0.2804, 0.0, 6.6721, -76.0455, 0.06, -50.4304)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD56" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9599, 0.0, -1.9488, -0.0, 1.0, -0.0, 0.2804, 0.0, 6.6721, -90.06, 0.06, -54.5239)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE57" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.953, 0.0, -2.1091, -0.0, 1.0, -0.0, 0.3028, 0.0, 6.6376, -74.1446, 0.06, -56.6654)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD57" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.953, 0.0, -2.1091, -0.0, 1.0, -0.0, 0.3028, 0.0, 6.6376, -88.0591, 0.06, -61.0867)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE58" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9312, 0.0, -2.5575, -0.0, 1.0, -0.0, 0.3646, 0.0, 6.5326, -72.0606, 0.06, -62.5466)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD58" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.9312, 0.0, -2.5575, -0.0, 1.0, -0.0, 0.3646, 0.0, 6.5326, -85.6559, 0.06, -67.8691)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE59" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.8879, 0.0, -3.2941, -0.0, 1.0, -0.0, 0.4601, 0.0, 6.3573, -69.5635, 0.06, -68.0465)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD59" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.8879, 0.0, -3.2941, -0.0, 1.0, -0.0, 0.4601, 0.0, 6.3573, -82.5266, 0.06, -74.7634)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE60" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.8545, 0.0, -3.982, -0.0, 1.0, -0.0, 0.5194, 0.0, 6.5517, -66.3087, 0.06, -73.8197)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD60" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.8545, 0.0, -3.982, -0.0, 1.0, -0.0, 0.5194, 0.0, 6.5517, -78.7851, 0.06, -81.4027)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE61" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.8407, 0.0, -4.4297, -0.0, 1.0, -0.0, 0.5415, 0.0, 6.8764, -62.3659, 0.06, -80.1137)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD61" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.8407, 0.0, -4.4297, -0.0, 1.0, -0.0, 0.5415, 0.0, 6.8764, -74.6397, 0.06, -88.0204)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE62" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.8114, 0.0, -4.8781, -0.0, 1.0, -0.0, 0.5845, 0.0, 6.7715, -58.1047, 0.06, -86.3616)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD62" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.8114, 0.0, -4.8781, -0.0, 1.0, -0.0, 0.5845, 0.0, 6.7715, -69.951, 0.06, -94.8955)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE63" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.7604, 0.0, -5.3273, -0.0, 1.0, -0.0, 0.6495, 0.0, 6.2369, -53.5706, 0.06, -92.1414)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD63" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.7604, 0.0, -5.3273, -0.0, 1.0, -0.0, 0.6495, 0.0, 6.2369, -64.6722, 0.06, -101.6238)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE64" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.6741, 0.0, -5.7772, -0.0, 1.0, -0.0, 0.7386, 0.0, 5.2727, -48.8616, 0.06, -97.0242)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD64" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.6741, 0.0, -5.7772, -0.0, 1.0, -0.0, 0.7386, 0.0, 5.2727, -58.7038, 0.06, -107.808)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE65" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.5287, 0.0, -6.2278, -0.0, 1.0, -0.0, 0.8488, 0.0, 3.8788, -44.1518, 0.06, -100.6194)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD65" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.5287, 0.0, -6.2278, -0.0, 1.0, -0.0, 0.8488, 0.0, 3.8788, -51.8704, 0.06, -113.0123)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE66" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.3391, 0.0, -7.0118, -0.0, 1.0, -0.0, 0.9407, 0.0, 2.5279, -39.1702, 0.06, -103.0286)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD66" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.3391, 0.0, -7.0118, -0.0, 1.0, -0.0, 0.9407, 0.0, 2.5279, -44.1217, 0.06, -116.7634)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE67" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.1909, 0.0, -7.862, -0.0, 1.0, -0.0, 0.9816, 0.0, 1.5292, -33.1012, 0.06, -104.6808)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD67" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.1909, 0.0, -7.862, -0.0, 1.0, -0.0, 0.9816, 0.0, 1.5292, -35.8888, 0.06, -119.0122)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE68" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.0678, 0.0, -8.3119, -0.0, 1.0, -0.0, 0.9977, 0.0, 0.565, -26.224, 0.06, -105.5702)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD68" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(0.0678, 0.0, -8.3119, -0.0, 1.0, -0.0, 0.9977, 0.0, 0.565, -27.2141, 0.06, -120.1365)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE69" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.0436, 0.0, -8.3615, 0.0, 1.0, -0.0, 0.999, -0.0, -0.3648, -19.0213, 0.06, -105.6565)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD69" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.0436, 0.0, -8.3615, 0.0, 1.0, -0.0, 0.999, -0.0, -0.3648, -18.3848, 0.06, -120.2426)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE70" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.1554, 0.0, -8.0107, 0.0, 1.0, -0.0, 0.9878, -0.0, -1.2603, -11.9663, 0.06, -104.957)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD70" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.1554, 0.0, -8.0107, 0.0, 1.0, -0.0, 0.9878, -0.0, -1.2603, -9.6973, 0.06, -119.3796)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE71" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.2805, 0.0, -7.2597, 0.0, 1.0, -0.0, 0.9599, -0.0, -2.1213, -5.5377, 0.06, -103.5355)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD71" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.2805, 0.0, -7.2597, 0.0, 1.0, -0.0, 0.9599, -0.0, -2.1213, -1.4428, 0.06, -117.5495)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE72" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.462, 0.0, -6.568, 0.0, 1.0, -0.0, 0.8869, -0.0, -3.4214, -0.2149, 0.06, -101.4035)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD72" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.462, 0.0, -6.568, 0.0, 1.0, -0.0, 0.8869, -0.0, -3.4214, 6.5303, 0.06, -114.352)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE73" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.6146, 0.0, -6.2084, 0.0, 1.0, -0.0, 0.7888, -0.0, -4.8369, 4.8136, 0.06, -98.1488)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD73" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.6146, 0.0, -6.2084, 0.0, 1.0, -0.0, 0.7888, -0.0, -4.8369, 13.7866, 0.06, -109.666)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE74" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.6994, 0.0, -5.8576, 0.0, 1.0, -0.0, 0.7147, -0.0, -5.7323, 9.9953, 0.06, -93.6087)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD74" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.6994, 0.0, -5.8576, 0.0, 1.0, -0.0, 0.7147, -0.0, -5.7323, 20.2069, 0.06, -104.0434)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE75" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.7422, 0.0, -5.5157, 0.0, 1.0, -0.0, 0.6702, -0.0, -6.1077, 15.1513, 0.06, -88.2411)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD75" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.7422, 0.0, -5.5157, 0.0, 1.0, -0.0, 0.6702, -0.0, -6.1077, 25.9868, 0.06, -98.0264)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE76" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.7548, 0.0, -5.1827, 0.0, 1.0, -0.0, 0.656, -0.0, -5.963, 20.2027, 0.06, -82.5418)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD76" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.7548, 0.0, -5.1827, 0.0, 1.0, -0.0, 0.656, -0.0, -5.963, 31.2223, 0.06, -92.1193)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE77" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.737, 0.0, -4.8585, 0.0, 1.0, -0.0, 0.6759, -0.0, -5.2983, 25.1596, 0.06, -76.9827)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD77" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.737, 0.0, -4.8585, 0.0, 1.0, -0.0, 0.6759, -0.0, -5.2983, 35.9203, 0.06, -86.8501)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE78" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.7505, 0.0, -4.1988, 0.0, 1.0, -0.0, 0.6609, -0.0, -4.7677, 29.4161, 0.06, -72.2523)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD78" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.7505, 0.0, -4.1988, 0.0, 1.0, -0.0, 0.6609, -0.0, -4.7677, 40.3728, 0.06, -81.9017)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE79" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.8037, 0.0, -3.465, 0.0, 1.0, -0.0, 0.5951, -0.0, -4.6799, 32.7121, 0.06, -68.191)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD79" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.8037, 0.0, -3.465, 0.0, 1.0, -0.0, 0.5951, -0.0, -4.6799, 44.4459, 0.06, -76.8788)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE80" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.8229, 0.0, -3.132, 0.0, 1.0, -0.0, 0.5683, -0.0, -4.5352, 35.7438, 0.06, -63.9563)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD80" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.8229, 0.0, -3.132, 0.0, 1.0, -0.0, 0.5683, -0.0, -4.5352, 47.7574, 0.06, -72.2528)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE81" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.8045, 0.0, -3.1997, 0.0, 1.0, -0.0, 0.594, -0.0, -4.3337, 38.9219, 0.06, -59.5047)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD81" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.8045, 0.0, -3.1997, 0.0, 1.0, -0.0, 0.594, -0.0, -4.3337, 50.6674, 0.06, -68.1767)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE82" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.7433, 0.0, -3.6682, 0.0, 1.0, -0.0, 0.669, -0.0, -4.0753, 42.6707, 0.06, -54.9141)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD82" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.7433, 0.0, -3.6682, 0.0, 1.0, -0.0, 0.669, -0.0, -4.0753, 53.5223, 0.06, -64.6816)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE83" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.6381, 0.0, -4.5375, 0.0, 1.0, -0.0, 0.77, -0.0, -3.7601, 47.3837, 0.06, -50.41)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD83" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.6381, 0.0, -4.5375, 0.0, 1.0, -0.0, 0.77, -0.0, -3.7601, 56.6995, 0.06, -61.6517)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE84" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.4904, 0.0, -5.4812, 0.0, 1.0, -0.0, 0.8715, -0.0, -3.0842, 53.2785, 0.06, -46.3783)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD84" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.4904, 0.0, -5.4812, 0.0, 1.0, -0.0, 0.8715, -0.0, -3.0842, 60.438, 0.06, -59.1023)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE85" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.3627, 0.0, -6.1192, 0.0, 1.0, -0.0, 0.9319, -0.0, -2.3815, 59.7878, 0.06, -43.3096)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD85" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.3627, 0.0, -6.1192, 0.0, 1.0, -0.0, 0.9319, -0.0, -2.3815, 65.083, 0.06, -56.9155)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE86" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.3068, 0.0, -6.5877, 0.0, 1.0, -0.0, 0.9518, -0.0, -2.1232, 66.3052, 0.06, -40.9987)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD86" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.3068, 0.0, -6.5877, 0.0, 1.0, -0.0, 0.9518, -0.0, -2.1232, 70.7838, 0.06, -54.8949)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE87" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.3179, 0.0, -6.8868, 0.0, 1.0, -0.0, 0.9481, -0.0, -2.3091, 72.7019, 0.06, -38.8946)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD87" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.3179, 0.0, -6.8868, 0.0, 1.0, -0.0, 0.9481, -0.0, -2.3091, 77.3433, 0.06, -52.7372)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE88" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.3864, 0.0, -7.0163, 0.0, 1.0, -0.0, 0.9223, -0.0, -2.9394, 78.8861, 0.06, -36.5595)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD88" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.3864, 0.0, -7.0163, 0.0, 1.0, -0.0, 0.9223, -0.0, -2.9394, 84.5275, 0.06, -50.0256)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE89" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.4987, 0.0, -6.9763, 0.0, 1.0, -0.0, 0.8668, -0.0, -4.0139, 84.7934, 0.06, -33.6222)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD89" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.4987, 0.0, -6.9763, 0.0, 1.0, -0.0, 0.8668, -0.0, -4.0139, 92.0746, 0.06, -46.277)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE90" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.5581, 0.0, -7.5495, 0.0, 1.0, -0.0, 0.8298, -0.0, -5.0777, 91.3435, 0.06, -29.5213)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD90" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.5581, 0.0, -7.5495, 0.0, 1.0, -0.0, 0.8298, -0.0, -5.0777, 99.4917, 0.06, -41.636)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE91" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.568, 0.0, -8.3809, 0.0, 1.0, -0.0, 0.823, -0.0, -5.7838, 98.9301, 0.06, -24.3486)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD91" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.568, 0.0, -8.3809, 0.0, 1.0, -0.0, 0.823, -0.0, -5.7838, 107.2227, 0.06, -36.365)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE92" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.6019, 0.0, -8.5104, 0.0, 1.0, -0.0, 0.7986, -0.0, -6.414, 106.8035, 0.06, -18.6627)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD92" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.6019, 0.0, -8.5104, 0.0, 1.0, -0.0, 0.7986, -0.0, -6.414, 115.5909, 0.06, -30.3222)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE93" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.6597, 0.0, -7.9381, 0.0, 1.0, -0.0, 0.7515, -0.0, -6.9684, 114.2892, 0.06, -12.5725)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD93" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.6597, 0.0, -7.9381, 0.0, 1.0, -0.0, 0.7515, -0.0, -6.9684, 123.9211, 0.06, -23.5446)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbE94" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.7452, 0.0, -6.6639, 0.0, 1.0, -0.0, 0.6668, -0.0, -7.447, 120.6854, 0.06, -6.2601)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbD94" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.7452, 0.0, -6.6639, 0.0, 1.0, -0.0, 0.6668, -0.0, -7.447, 131.5653, 0.06, -15.996)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_a")
-
-[node name="KerbE95" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.8585, 0.0, -4.6879, 0.0, 1.0, -0.0, 0.5127, -0.0, -7.8497, 125.3156, 0.06, -0.0309)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-[node name="KerbD95" type="MeshInstance3D" parent="Kerbs"]
-transform = Transform3D(-0.8585, 0.0, -4.6879, 0.0, 1.0, -0.0, 0.5127, -0.0, -7.8497, 137.8504, 0.06, -7.5169)
-mesh = SubResource("Mesh_kerb")
-material_override = SubResource("Mat_kerb_b")
-
-
 [node name="Mont1" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(1.35, 0, 0, 0, 1.35, 0, 0, 0, 1.35, -340.0, 94.625, -150.0)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 [node name="Mont2" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(0.81, 0, 0, 0, 0.81, 0, 0, 0, 0.81, -259.0, 52.775, -116.25)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 [node name="Mont3" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(0.945, 0, 0, 0, 0.945, 0, 0, 0, 0.945, -407.5, 63.2375, -197.25)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 [node name="Mont4" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(0.95, 0, 0, 0, 0.95, 0, 0, 0, 0.95, -280.0, 63.625, 170.0)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 [node name="Mont5" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(0.57, 0, 0, 0, 0.57, 0, 0, 0, 0.57, -223.0, 34.175, 193.75)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 [node name="Mont6" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(0.665, 0, 0, 0, 0.665, 0, 0, 0, 0.665, -327.5, 41.5375, 136.75)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 [node name="Mont7" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(1.2, 0, 0, 0, 1.2, 0, 0, 0, 1.2, 350.0, 83.0, -260.0)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 [node name="Mont8" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(0.72, 0, 0, 0, 0.72, 0, 0, 0, 0.72, 422.0, 45.8, -230.0)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 [node name="Mont9" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(0.84, 0, 0, 0, 0.84, 0, 0, 0, 0.84, 290.0, 55.1, -302.0)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 [node name="Mont10" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 390.0, 52.0, 150.0)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 [node name="Mont11" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(0.48, 0, 0, 0, 0.48, 0, 0, 0, 0.48, 438.0, 27.2, 170.0)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 [node name="Mont12" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(0.56, 0, 0, 0, 0.56, 0, 0, 0, 0.56, 350.0, 33.4, 122.0)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 [node name="Mont13" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(1.65, 0, 0, 0, 1.65, 0, 0, 0, 1.65, -40.0, 117.875, -450.0)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 [node name="Mont14" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(0.99, 0, 0, 0, 0.99, 0, 0, 0, 0.99, 59.0, 66.725, -408.75)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 [node name="Mont15" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(1.155, 0, 0, 0, 1.155, 0, 0, 0, 1.155, -122.5, 79.5125, -507.75)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 [node name="Mont16" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(1.05, 0, 0, 0, 1.05, 0, 0, 0, 1.05, 200.0, 71.375, -390.0)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 [node name="Mont17" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(0.63, 0, 0, 0, 0.63, 0, 0, 0, 0.63, 263.0, 38.825, -363.75)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 [node name="Mont18" type="MeshInstance3D" parent="Cenario"]
 transform = Transform3D(0.735, 0, 0, 0, 0.735, 0, 0, 0, 0.735, 147.5, 46.9625, -426.75)
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0

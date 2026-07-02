@@ -223,36 +223,14 @@ material_override = SubResource("Mat_ponte")
         _orig = add(add(_pre, mul(_acpre, _o)), (0.0, 1.4, 0.0))
         itens_nodes.append('[node name="Item%d" parent="Itens" instance=ExtResource("12_item")]\ntransform = %s\n' % (item_id, pos_xf(_orig)))
 
-    # ---------- zebras (kerbs) seguindo as bordas da curva ----------
-    M = 6                       # subdivisões por trecho (suaviza a curva)
-    amostras = []
-    for i in range(N):
-        p0 = pts[i]; p3 = pts[(i+1) % N]
-        p1 = add(p0, handle(i)); p2 = sub(p3, handle((i+1) % N))
-        for k in range(M):
-            amostras.append(bezier(p0, p1, p2, p3, k/float(M)))
-    kerb_nodes = []
-    total = len(amostras)
-    for j in range(total):
-        cur = amostras[j]; nxt = amostras[(j+1) % total]
-        seg = sub(nxt, cur); L = length(seg)
-        if L < 1e-4:
-            continue
-        fwd = norm(seg)
-        lateral = norm(cross(UP, fwd))
-        mid = mul(add(cur, nxt), 0.5)
-        cx, cy, cz = basis_look(fwd)
-        cz = mul(cz, L * 1.04)              # estica a caixa para casar com a próxima
-        cols = (cx, cy, cz)
-        mat = "Mat_kerb_a" if j % 2 == 0 else "Mat_kerb_b"
-        for lado, off in (("E", -7.3), ("D", 7.3)):
-            o = add(mid, mul(lateral, off)); o = (o[0], 0.06, o[2])
-            kerb_nodes.append(
-                '[node name="Kerb%s%d" type="MeshInstance3D" parent="Kerbs"]\n'
-                'transform = %s\n'
-                'mesh = SubResource("Mesh_kerb")\n'
-                'material_override = SubResource("%s")\n\n' % (lado, j, xf(cols, o), mat))
-    kerbs_str = "".join(kerb_nodes)
+    # ---------- zebras (kerbs) ----------
+    # As zebras agora são UM único MultiMesh construído em runtime por
+    # pista_zebras.gd (a partir do TrackPath): ~200 nós viram 1 draw call.
+    # Aqui só emitimos o nó com as cores da pista.
+    zebras_str = ('[node name="Zebras" type="MultiMeshInstance3D" parent="."]\n'
+                  'script = ExtResource("21_zebras")\n'
+                  'cor_a = %s\n'
+                  'cor_b = %s\n\n' % (cfg["kerb_a"], cfg["kerb_b"]))
 
     # ---------- montanhas ----------
     mont_centros = [
@@ -263,10 +241,13 @@ material_override = SubResource("Mat_ponte")
     for (mx, mz, s) in mont_centros:
         for (dx, dz, ss) in [(0.0, 0.0, 1.0), (60.0, 25.0, 0.6), (-50.0, -35.0, 0.7)]:
             sc = s * ss; oy = -10.0 + 77.5 * sc; mi += 1
+            # cast_shadow = 0: as montanhas ficam além do alcance das sombras
+            # (220 m) — tirá-las do passe de sombras poupa 4 desenhos cada.
             mont_nodes.append(f'''[node name="Mont{mi}" type="MeshInstance3D" parent="Cenario"]
 transform = {xf(((sc,0,0),(0,sc,0),(0,0,sc)), (mx+dx*s, oy, mz+dz*s))}
 mesh = SubResource("Mesh_montanha")
 material_override = SubResource("Mat_montanha")
+cast_shadow = 0
 ''')
     montanhas = "".join(mont_nodes)
     blimp_xf = xf(((0,1,0),(-1,0,0),(0,0,1)), (140.0, 78.0, -40.0))
@@ -293,6 +274,7 @@ material_override = SubResource("Mat_montanha")
 [ext_resource type="Script" path="res://minimapa.gd" id="18_mini"]
 [ext_resource type="Theme" path="res://tema.tres" id="19_tema"]
 [ext_resource type="Script" path="res://pista_asfalto.gd" id="20_asfalto"]
+[ext_resource type="Script" path="res://pista_zebras.gd" id="21_zebras"]
 
 [sub_resource type="PanoramaSkyMaterial" id="Sky_mat"]
 panorama = ExtResource("4_sky")
@@ -319,7 +301,7 @@ glow_bloom = 0.1
 glow_hdr_threshold = 0.95
 glow_blend_mode = 1
 fog_enabled = true
-fog_mode = 1
+fog_mode = 0
 fog_light_color = %FOG%
 fog_sun_scatter = 0.2
 fog_density = %FOG_D%
@@ -332,8 +314,8 @@ shader_parameter/normalmap = ExtResource("15_wnormal")
 
 [sub_resource type="PlaneMesh" id="Ocean_mesh"]
 size = Vector2(6000, 6000)
-subdivide_width = 400
-subdivide_depth = 400
+subdivide_width = 200
+subdivide_depth = 200
 
 [sub_resource type="StandardMaterial3D" id="Mat_asfalto"]
 albedo_texture = ExtResource("5_asfalto")
@@ -348,17 +330,6 @@ emission_enabled = true
 emission = %CENTRO%
 emission_energy_multiplier = 0.5
 roughness = 0.6
-
-[sub_resource type="StandardMaterial3D" id="Mat_kerb_a"]
-albedo_color = %KERB_A%
-roughness = 0.55
-
-[sub_resource type="StandardMaterial3D" id="Mat_kerb_b"]
-albedo_color = %KERB_B%
-roughness = 0.55
-
-[sub_resource type="BoxMesh" id="Mesh_kerb"]
-size = Vector3(1.0, 0.12, 1.0)
 
 [sub_resource type="StandardMaterial3D" id="Mat_ponte"]
 albedo_color = %PONTE%
@@ -407,6 +378,7 @@ size = Vector3(9.0, 0.6, 10.0)
 size = Vector3(9.0, 0.6, 10.0)
 
 [sub_resource type="Curve3D" id="Track_curve"]
+bake_interval = 1.0
 _data = {
 "points": PackedVector3Array(%CURVE%),
 "tilts": PackedFloat32Array(%TILTS%),
@@ -451,6 +423,8 @@ directional_shadow_split_3 = 0.5
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -8, 0)
 mesh = SubResource("Ocean_mesh")
 material_override = SubResource("Water_mat")
+cast_shadow = 0
+extra_cull_margin = 4.0
 
 [node name="TrackPath" type="Path3D" parent="."]
 curve = SubResource("Track_curve")
@@ -470,13 +444,13 @@ path_joined = true
 path_rotation = 1
 smooth_faces = false
 material = SubResource("Mat_centro")
+cast_shadow = 0
 
-[node name="Kerbs" type="Node3D" parent="."]
-
-[node name="FinishLine" type="MeshInstance3D" parent="."]
+{zebras_str}[node name="FinishLine" type="MeshInstance3D" parent="."]
 transform = {finish_xf}
 mesh = SubResource("Mesh_finish")
 material_override = SubResource("Mat_checker")
+cast_shadow = 0
 
 [node name="Rampa" type="StaticBody3D" parent="."]
 
@@ -712,17 +686,17 @@ bus = "SFX"
 
     full = (header + "\n" + scene + "\n" + rivais_str + "\n"
             + "".join(torres_nodes) + "\n" + "".join(itens_nodes) + "\n"
-            + kerbs_str + "\n" + montanhas)
+            + montanhas)
 
     # Reconta load_steps automaticamente (nº de recursos + 1).
     n = full.count("[ext_resource") + full.count("[sub_resource")
     full = re.sub(r"load_steps=\d+", "load_steps=%d" % (n + 1), full, count=1)
-    return full, len(rivais), item_id, len(kerb_nodes)
+    return full, len(rivais), item_id
 
 
 if __name__ == "__main__":
     for cfg in TRACKS:
-        texto, nr, ni, nk = build(cfg)
+        texto, nr, ni = build(cfg)
         with open(os.path.join(RAIZ, cfg["out"]), "w") as f:
             f.write(texto)
-        print("%-14s gerado: %d rivais | %d itens | %d zebras" % (cfg["out"], nr, ni, nk))
+        print("%-14s gerado: %d rivais | %d itens | zebras em MultiMesh" % (cfg["out"], nr, ni))
