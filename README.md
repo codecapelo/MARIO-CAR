@@ -14,6 +14,8 @@ Jogo de kart **3D** feito em **Godot 4.6**, no estilo Mario Kart: uma **ponte de
 - 🛣️ **3 pistas** com climas diferentes (Ponte do Oceano, Baía do Pôr do Sol, Ilha da Lua), **asfalto de corrida**, **linha central** e **zebras** vermelho/branco nas curvas.
 - ⚙️ **Menu de opções**: voltas, **dificuldade** (Fácil/Normal/Difícil), **escolha da pista**, **cor do kart** e tela "como jogar".
 - 🏆 **Acabamento de corrida**: contagem **3-2-1** com "pulo", aviso de **ÚLTIMA VOLTA**, alerta de **CONTRAMÃO** e **classificação ao vivo** com os nomes.
+- 🪂 **Extras estilo Mario Kart**: **pulinho** ao iniciar o drift, faíscas **azul → laranja** conforme a carga do mini-turbo, **roleta de item** (os nomes giram antes de revelar), **vácuo/slipstream** (colar atrás de um rival por ~1 s dá um empurrão) e **manobra na rampa** (aperte o drift no ar → turbo ao pousar).
+- ⚡ **Otimizado**: zebras em **MultiMesh** (1 draw call em vez de ~200), oceano com malha ~4× mais leve (espuma agora calculada **por pixel**, fica até melhor), sombras desligadas em quem não precisa (água, montanhas, zebras), shader das montanhas mais barato e **interpolação de física** (movimento liso em telas de 120 Hz+).
 - 🎥 **Câmera viva**: persegue o kart, **abre o campo de visão** com a velocidade e **treme** no turbo.
 - ✨ **VFX**: chamas de turbo, fumaça do escapamento, **poeira/faíscas no drift** (mudam de cor com a carga), flash ao pegar item, **rodas girando**, corpo inclinando nas curvas, **SSAO + glow + névoa** e sombras de qualidade.
 - 🔊 **Áudio completo**: **música** em loop, barramentos (Master/Música/Efeitos) com volumes ajustáveis, motor dinâmico (varia com a aceleração), sons de turbo, drift, largada e **fanfarra** de vitória; rival e caixas com **áudio espacial 3D**.

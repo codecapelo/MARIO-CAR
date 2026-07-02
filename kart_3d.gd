@@ -37,6 +37,10 @@ extends CharacterBody3D
 @export var carga_turbo1: float = 0.9        # segundos de drift p/ turbo pequeno
 @export var carga_turbo2: float = 1.7        # turbo grande
 
+# --- vácuo (slipstream) e manobra ---
+@export var vacuo_dist: float = 13.0         # distância p/ "pegar o vácuo" de um rival
+@export var vacuo_tempo: float = 1.1         # segundos no vácuo até ganhar o empurrão
+
 # --- física do mundo ---
 @export var gravidade: float = 28.0
 @export var altura_de_queda: float = -6.0
@@ -57,10 +61,17 @@ var drift_carga: float = 0.0     # segundos acumulados derrapando
 
 # --- itens (segura um item e usa quando quiser, igual ao Mario Kart) ---
 var item_guardado: String = ""   # "" = nenhum; senão "turbo"/"estrela"/"raio"/"banana"/"casco"
+var item_roleta: float = 0.0     # tempo restante da "roleta" (HUD gira os nomes)
+var _item_pendente: String = ""  # o item já sorteado, revelado quando a roleta para
 var _rodopio_timer: float = 0.0  # tempo rodopiando (atingido por banana/casco)
 var _rodopiando: bool = false
 var _raio_timer: float = 0.0     # tempo lento por causa do raio
 var _col_timer: float = 0.0      # respiro entre reações de colisão
+
+# As cenas dos itens já carregadas na memória (preload): soltar uma banana
+# no meio da corrida não precisa ler o disco (evita engasgo no 1º uso).
+const CENA_BANANA: PackedScene = preload("res://banana.tscn")
+const CENA_CASCO: PackedScene = preload("res://casco.tscn")
 
 var no_chao: bool = false
 var chao_normal: Vector3 = Vector3.UP
@@ -73,6 +84,13 @@ var _pitch_motor: float = 0.85
 var _spin_rodas: float = 0.0
 var _esterco: float = 0.0
 var _roll: float = 0.0
+var _yaw_drift: float = 0.0      # giro extra do corpo (Visual) durante o drift
+var _vacuo_timer: float = 0.0    # tempo acumulado "colado" atrás de um rival
+var _tempo_ar: float = 0.0       # tempo no ar (para a manobra na rampa)
+var _truque: bool = false        # fez a manobra? (dá turbo ao pousar)
+var _tw_truque: Tween = null     # animação do giro (cancelada ao pousar)
+var _tw_pulinho: Tween = null    # animação do pulinho do drift
+var _respawn_timer: float = 0.0  # penalidade parado depois de cair no mar
 
 # --- nós (podem não existir em versões antigas da cena: get_node_or_null) ---
 @onready var motor: AudioStreamPlayer = get_node_or_null("Motor")
@@ -129,11 +147,34 @@ func _physics_process(delta: float) -> void:
 	if travado:
 		velocity = -global_transform.basis.y * 2.0   # assenta no chão
 		move_and_slide()
-		_atualizar_motor()
+		# Cruzou a linha de chegada derrapando/turbinado? O gerente trava o
+		# kart POR FORA — precisamos encerrar o que ficou "aceso", senão o
+		# som do drift, as faíscas e o motor a pleno RPM vazam por ~2 s
+		# sobre a tela de resultado.
+		if driftando:
+			_cancelar_drift()
+		velocidade_atual = move_toward(velocidade_atual, 0.0, atrito * delta)
+		if boost_timer > 0.0:
+			boost_timer -= delta
+		_atualizar_roleta(delta)
+		_atualizar_vfx()
+		_atualizar_motor(delta)
+		# A penalidade do respawn conta AQUI (no physics) de propósito: com o
+		# jogo pausado o physics não roda, então pausar não "come" o timer —
+		# e o kart nunca fica travado para sempre.
+		if _respawn_timer > 0.0:
+			_respawn_timer -= delta
+			if _respawn_timer <= 0.0 and Jogo.estado == Jogo.Estado.CORRENDO:
+				travado = false
+		# Mesmo travado (fim de corrida), cair no mar reposiciona o kart —
+		# senão ele afundaria na água na frente da câmera.
+		_checar_queda(delta)
 		return
 
 	if _checar_resgate(delta):
 		return
+
+	_atualizar_roleta(delta)
 
 	# Usar o item guardado (tecla E / botão L1).
 	if Input.is_action_just_pressed("usar_item"):
@@ -151,6 +192,7 @@ func _physics_process(delta: float) -> void:
 	_detectar_chao()
 	_acelerar_ou_frear(delta)
 	_atualizar_drift(delta)
+	_atualizar_vacuo(delta)
 	_virar(delta)
 	_mover(delta)
 	_processar_colisoes()
@@ -161,10 +203,21 @@ func _physics_process(delta: float) -> void:
 		boost_timer = maxf(boost_timer, 0.2)   # mantém o turbo aceso durante a estrela
 		if estrela_timer <= 0.0:
 			_estrela_extra = 0.0
-	_atualizar_motor()
+	_atualizar_motor(delta)
 	_atualizar_visual(delta)
 	_atualizar_vfx()
 	_checar_queda(delta)
+
+
+# Roleta de item: os nomes giram no HUD por um instante e só então o item
+# sorteado "cai na mão" (igual à caixinha do Mario Kart). Continua andando
+# mesmo com o kart travado, para não congelar a roleta na tela de resultado.
+func _atualizar_roleta(delta: float) -> void:
+	if item_roleta > 0.0:
+		item_roleta -= delta
+		if item_roleta <= 0.0:
+			item_guardado = _item_pendente
+			_item_pendente = ""
 
 
 # Raycast "para baixo" (relativo ao kart) para achar a pista e sua inclinação.
@@ -229,7 +282,7 @@ func _virar(delta: float) -> void:
 func _atualizar_drift(delta: float) -> void:
 	if _rodopiando:
 		if driftando:
-			_soltar_drift()
+			_cancelar_drift()   # levar uma banana no meio do drift NÃO premia
 		return
 	if not no_chao:
 		return
@@ -239,6 +292,7 @@ func _atualizar_drift(delta: float) -> void:
 		driftando = true
 		drift_sentido = signf(sentido)     # trava o lado da derrapagem
 		drift_carga = 0.0
+		_pulinho_drift()                   # o "hop" clássico ao entrar no drift
 		if som_drift and not som_drift.playing:
 			som_drift.play()
 	if driftando:
@@ -254,11 +308,64 @@ func _soltar_drift() -> void:
 		aplicar_boost(1.3)
 	elif drift_carga >= carga_turbo1:
 		aplicar_boost(0.75)
+	_cancelar_drift()
+
+
+# Encerra o drift SEM recompensa (usado quando o kart é atingido: a carga
+# acumulada se perde — rodopiar não pode virar prêmio).
+func _cancelar_drift() -> void:
 	driftando = false
 	drift_carga = 0.0
 	drift_sentido = 0.0
 	if som_drift:
 		som_drift.stop()
+
+
+# Pulinho ao iniciar o drift (só o Visual sobe e desce — a física não muda).
+func _pulinho_drift() -> void:
+	if visual == null:
+		return
+	# Reentrar no drift antes do pulinho anterior acabar: mata o tween velho,
+	# senão os dois disputam position:y e o kart treme.
+	if _tw_pulinho and _tw_pulinho.is_valid():
+		_tw_pulinho.kill()
+	_tw_pulinho = create_tween()
+	_tw_pulinho.tween_property(visual, "position:y", 0.32, 0.09) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tw_pulinho.tween_property(visual, "position:y", 0.0, 0.13) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+
+
+# VÁCUO (slipstream): andar "colado" atrás de outro corredor por um tempo
+# dá um empurrão de velocidade — como nos Mario Kart mais novos. O ar que o
+# rival "abre" na frente deixa o seu kart correr com menos resistência.
+func _atualizar_vacuo(delta: float) -> void:
+	if not no_chao or driftando or _rodopiando or boost_timer > 0.0 \
+			or velocidade_atual < velocidade_maxima * 0.6:
+		_vacuo_timer = 0.0
+		return
+	var frente := -global_transform.basis.z
+	var atras_de_alguem := false
+	for r in get_tree().get_nodes_in_group("corredores"):
+		if r == self:
+			continue
+		var outro := r as Node3D
+		if outro == null:
+			continue
+		var rel: Vector3 = outro.global_position - global_position
+		var dist := rel.length()
+		# perto E quase exatamente na direção da frente (cone estreito)
+		if dist > 1.0 and dist < vacuo_dist and rel.normalized().dot(frente) > 0.9:
+			atras_de_alguem = true
+			break
+	if atras_de_alguem:
+		_vacuo_timer += delta
+		if _vacuo_timer >= vacuo_tempo:
+			_vacuo_timer = 0.0
+			aplicar_boost(0.9)
+	else:
+		# perdeu a posição: o vácuo esvazia rápido, mas não zera de estalo
+		_vacuo_timer = maxf(0.0, _vacuo_timer - delta * 2.0)
 
 
 func _mover(delta: float) -> void:
@@ -308,17 +415,37 @@ func _mover(delta: float) -> void:
 		var sentido := Input.get_axis("virar_esquerda", "virar_direita")
 		rotate(Vector3.UP, -sentido * 1.0 * delta)
 		_estava_no_ar = true
+		_tempo_ar += delta
+		# MANOBRA: apertar o drift no ar (depois de um voo de verdade — um
+		# pulinho de quina não vale) dá um giro e um turbo ao pousar (MK7).
+		if Input.is_action_just_pressed("drift") and _tempo_ar > 0.25 and not _truque:
+			_truque = true
+			if visual:
+				_tw_truque = create_tween()
+				_tw_truque.tween_property(visual, "rotation:x", TAU, 0.45).from(0.0)
+				_tw_truque.tween_callback(func(): visual.rotation.x = 0.0)
 
 	move_and_slide()
 
 
 func _ao_pousar() -> void:
 	# Pousar muito de bico custa velocidade; sempre dá um baque na câmera.
-	var dir_mov := velocity.normalized()
+	var alinhamento := 1.0
 	if velocity.length() > 0.1:
-		var alinhamento := (-global_transform.basis.z).dot(dir_mov)
+		alinhamento = (-global_transform.basis.z).dot(velocity.normalized())
 		if alinhamento < 0.6:
 			velocidade_atual *= 0.7
+	# Manobra só recompensa se o pouso foi LIMPO — pousar de bico perde o
+	# truque (e ainda leva a penalidade acima), como no Mario Kart.
+	if _truque and alinhamento >= 0.6:
+		aplicar_boost(0.85)
+	_truque = false
+	_tempo_ar = 0.0
+	# O pouso corta o giro na hora (senão o kart continuaria rodando no chão).
+	if _tw_truque and _tw_truque.is_valid():
+		_tw_truque.kill()
+	if visual:
+		visual.rotation.x = 0.0
 	_tremer_camera(0.2)
 	if visual:
 		# "squash": achata por um instante e volta ao normal (juice de pouso).
@@ -340,17 +467,30 @@ func _respawn() -> void:
 	_estrela_extra = 0.0
 	driftando = false
 	drift_carga = 0.0
+	_cancelar_estado_de_voo()   # cair no mar NÃO pode render turbo de manobra
 	if som_drift:
 		som_drift.stop()
 	global_transform = _ultimo_seguro
+	# Teleporte: avisa a interpolação de física para não "borrar" o salto.
+	reset_physics_interpolation()
 	_tremer_camera(0.15)
 	# pequena penalidade: ~0.8s parado antes de voltar a correr
+	# (o destravamento acontece no _physics_process, via _respawn_timer)
 	travado = true
-	await get_tree().create_timer(0.8).timeout
-	# só devolve o controle se a corrida ainda estiver rolando (não no
-	# resultado nem pausado), senão o kart "descongelaria" na tela de fim.
-	if is_instance_valid(self) and Jogo.estado == Jogo.Estado.CORRENDO:
-		travado = false
+	_respawn_timer = 0.8
+
+
+# Zera tudo que dizia respeito a estar "voando" (manobra, tempo de ar, vácuo).
+# Usado nos teleportes: respawn e resgate para a pista.
+func _cancelar_estado_de_voo() -> void:
+	_truque = false
+	_tempo_ar = 0.0
+	_vacuo_timer = 0.0
+	_estava_no_ar = false
+	if _tw_truque and _tw_truque.is_valid():
+		_tw_truque.kill()
+	if visual:
+		visual.rotation.x = 0.0
 
 
 # Segurar o botão "voltar_pista" por um instante reposiciona o kart na pista
@@ -376,6 +516,7 @@ func _voltar_para_pista() -> void:
 	_estrela_extra = 0.0
 	driftando = false
 	drift_carga = 0.0
+	_cancelar_estado_de_voo()
 	if som_drift:
 		som_drift.stop()
 	var path := get_node_or_null("../TrackPath") as Path3D
@@ -393,6 +534,8 @@ func _voltar_para_pista() -> void:
 			look_at(global_position + frente.normalized(), Vector3.UP)
 	else:
 		global_transform = _ultimo_seguro
+	# Teleporte: avisa a interpolação de física para não "borrar" o salto.
+	reset_physics_interpolation()
 	_tremer_camera(0.12)
 
 
@@ -405,15 +548,18 @@ func aplicar_boost(duracao: float = 2.0) -> void:
 	_tremer_camera(0.3)
 
 
-# Chamado pela caixa de item: GUARDA o item (não usa na hora).
+# Chamado pela caixa de item: GUARDA o item, mas primeiro roda a ROLETA
+# (o HUD mostra os nomes girando por ~1 segundo antes de revelar).
 func pegar_item(tipo: String) -> void:
-	if item_guardado == "":
-		item_guardado = tipo
+	if item_guardado == "" and item_roleta <= 0.0:
+		_item_pendente = tipo
+		item_roleta = 1.1
 
 
-# A caixa pergunta isto antes de se entregar: só pega se a mão estiver livre.
+# A caixa pergunta isto antes de se entregar: só pega se a mão estiver livre
+# (e se a roleta não estiver girando).
 func pode_pegar_item() -> bool:
-	return item_guardado == ""
+	return item_guardado == "" and item_roleta <= 0.0
 
 
 # Usa o item guardado (tecla E / botão). Cada tipo faz uma coisa.
@@ -437,10 +583,7 @@ func _usar_item() -> void:
 
 # Solta uma banana logo atrás do kart.
 func _soltar_banana() -> void:
-	var cena := load("res://banana.tscn")
-	if cena == null:
-		return
-	var b = cena.instantiate()   # sem tipo fixo: vamos acessar .dono dinamicamente
+	var b = CENA_BANANA.instantiate()   # sem tipo fixo: vamos acessar .dono dinamicamente
 	b.dono = self
 	var frente := -global_transform.basis.z
 	frente.y = 0.0
@@ -450,10 +593,7 @@ func _soltar_banana() -> void:
 
 # Dispara um casco reto para frente.
 func _disparar_casco() -> void:
-	var cena := load("res://casco.tscn")
-	if cena == null:
-		return
-	var c = cena.instantiate()   # sem tipo fixo: vamos acessar .dono/.direcao
+	var c = CENA_CASCO.instantiate()   # sem tipo fixo: vamos acessar .dono/.direcao
 	var frente := -global_transform.basis.z
 	frente.y = 0.0
 	frente = frente.normalized()
@@ -527,13 +667,14 @@ func _tremer_camera(intensidade: float) -> void:
 # ------------------------------------------------------------
 #  SOM E VISUAL
 # ------------------------------------------------------------
-func _atualizar_motor() -> void:
+func _atualizar_motor(delta: float) -> void:
 	if motor == null:
 		return
 	# rpm normalizado pelo TETO atual (assim o turbo não estoura o pitch)
 	var rpm := clampf(absf(velocidade_atual) / _teto(), 0.0, 1.0)
 	var alvo := 0.85 + rpm * 0.9 + (0.12 if _acelerando else 0.0)
-	_pitch_motor = lerpf(_pitch_motor, alvo, 0.18)
+	# suavização por delta (1 - exp): o motor responde igual em qualquer FPS
+	_pitch_motor = lerpf(_pitch_motor, alvo, 1.0 - exp(-11.0 * delta))
 	motor.pitch_scale = _pitch_motor
 	motor.volume_db = -16.0 + rpm * 9.0
 
@@ -564,6 +705,12 @@ func _atualizar_visual(delta: float) -> void:
 		_roll = lerpf(_roll, roll_alvo, clampf(8.0 * delta, 0.0, 1.0))
 		visual.rotation.z = _roll
 
+		# 3) no drift o corpo aponta PARA DENTRO da curva mais do que o kart
+		#    anda (o "de lado" clássico do Mario Kart) — de novo, só visual.
+		var yaw_alvo := -drift_sentido * deg_to_rad(13.0) if driftando else 0.0
+		_yaw_drift = lerpf(_yaw_drift, yaw_alvo, clampf(9.0 * delta, 0.0, 1.0))
+		visual.rotation.y = _yaw_drift
+
 
 func _atualizar_vfx() -> void:
 	var em_boost := boost_timer > 0.0
@@ -578,13 +725,14 @@ func _atualizar_vfx() -> void:
 	if poeira:
 		poeira.emitting = driftando and no_chao
 		if driftando and poeira.process_material:
-			# a cor sobe com a carga: branco -> laranja -> azul (mini-turbo)
+			# cores como no Mario Kart: branco (carregando) -> AZUL (turbo
+			# pequeno pronto) -> LARANJA (turbo grande pronto)
 			var mat := poeira.process_material as ParticleProcessMaterial
 			if mat:
 				if drift_carga >= carga_turbo2:
-					mat.color = Color(0.4, 0.7, 1.0)
+					mat.color = Color(1.0, 0.45, 0.1)
 				elif drift_carga >= carga_turbo1:
-					mat.color = Color(1.0, 0.6, 0.1)
+					mat.color = Color(0.35, 0.65, 1.0)
 				else:
 					mat.color = Color(0.9, 0.9, 0.9)
 

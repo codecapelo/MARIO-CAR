@@ -28,15 +28,12 @@ float altura(vec2 p, float t) {
 	return h * amplitude;
 }
 
-varying float onda_altura;
 varying vec3 pos_mundo;
 
 void vertex() {
 	float t = TIME * velocidade;
 	vec2 p = VERTEX.xz;
-	float h = altura(p, t);
-	VERTEX.y += h;
-	onda_altura = h;
+	VERTEX.y += altura(p, t);
 	pos_mundo = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 
@@ -60,13 +57,16 @@ void fragment() {
 	vec3 wn = normalize(n_onda + vec3(ripple.x, 0.0, ripple.y));
 	NORMAL = normalize((VIEW_MATRIX * vec4(wn, 0.0)).xyz);
 
-	// Fresnel: de cima fica azul; de raspão reflete o céu
+	// Fresnel: de cima fica azul; de raspão reflete o céu.
+	// Cor e espuma usam o "h" calculado POR PIXEL (analítico, exato) em vez
+	// da altura interpolada dos vértices — assim a malha pode ser bem mais
+	// leve sem a espuma "rastejar" com a subamostragem das ondas finas.
 	float fres = pow(1.0 - clamp(dot(normalize(VIEW), NORMAL), 0.0, 1.0), 5.0);
-	float prof = clamp(onda_altura * 0.4 + 0.5, 0.0, 1.0);
+	float prof = clamp(h * 0.4 + 0.5, 0.0, 1.0);
 	vec3 cor = mix(cor_funda, cor_rasa, prof);
 	cor = mix(cor, cor_reflexo, fres * 0.6);
 
-	float espuma = smoothstep(1.3 * amplitude, 1.7 * amplitude, onda_altura);
+	float espuma = smoothstep(1.3 * amplitude, 1.7 * amplitude, h);
 	cor = mix(cor, cor_espuma, espuma);
 
 	ALBEDO = cor;

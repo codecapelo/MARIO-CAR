@@ -40,6 +40,7 @@ var item_slot: Control
 var item_nome: Label
 var aviso: Label
 var _rank_timer: float = 0.0
+var _roleta_t: float = 0.0        # relógio próprio da roleta (congela na pausa)
 
 # Nome e cor de cada item, para o quadradinho do HUD.
 const ITENS_INFO: Dictionary = {
@@ -95,10 +96,23 @@ func _process(delta: float) -> void:
 	if kart and lbl_vel and "velocidade_atual" in kart:
 		lbl_vel.text = "%d km/h" % int(round(absf(kart.velocidade_atual) * 3.6))
 
-	# Item guardado (quadradinho central no topo).
+	# Item guardado (quadradinho central no topo) + ROLETA: enquanto o kart
+	# "sorteia" (item_roleta > 0), os nomes giram rápido antes de revelar.
 	if item_slot and kart and "item_guardado" in kart:
 		var it: String = kart.item_guardado
-		if it == "":
+		var roleta: float = kart.item_roleta if "item_roleta" in kart else 0.0
+		if roleta > 0.0 and item_nome:
+			item_slot.visible = true
+			# relógio próprio: o HUD processa mesmo pausado (process_mode 3),
+			# então usamos um acumulador que só anda com o jogo rodando.
+			if not get_tree().paused:
+				_roleta_t += delta
+			var nomes: Array = ITENS_INFO.keys()
+			var idx: int = int(_roleta_t / 0.09) % nomes.size()
+			var info_r: Dictionary = ITENS_INFO[nomes[idx]]
+			item_nome.text = String(info_r["nome"])
+			item_nome.add_theme_color_override("font_color", info_r["cor"])
+		elif it == "":
 			item_slot.visible = false
 		else:
 			item_slot.visible = true

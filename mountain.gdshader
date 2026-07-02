@@ -25,6 +25,9 @@ float noise(vec3 x) {
 				   mix(hash(i+vec3(0,1,1)), hash(i+vec3(1,1,1)), f.x), f.y), f.z);
 }
 float fbm(vec3 p) { float v = 0.0; float a = 0.5; for (int i = 0; i < 5; i++) { v += a * noise(p); p *= 2.0; a *= 0.5; } return v; }
+// Versão mais leve (4 oitavas) para o FRAGMENT: roda para cada pixel da
+// montanha, então cada oitava a menos economiza milhões de contas por quadro.
+float fbm4(vec3 p) { float v = 0.0; float a = 0.5; for (int i = 0; i < 4; i++) { v += a * noise(p); p *= 2.0; a *= 0.5; } return v; }
 
 void vertex() {
 	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -40,16 +43,17 @@ void vertex() {
 void fragment() {
 	// BUMP: perturba a normal pelo gradiente do ruído -> relevo iluminado
 	float e = 2.5;
-	float h0 = fbm(pos_mundo * 0.06);
+	float h0 = fbm4(pos_mundo * 0.06);
 	vec3 grad = vec3(
-		fbm((pos_mundo + vec3(e, 0, 0)) * 0.06) - h0,
-		fbm((pos_mundo + vec3(0, e, 0)) * 0.06) - h0,
-		fbm((pos_mundo + vec3(0, 0, e)) * 0.06) - h0) / e;
+		fbm4((pos_mundo + vec3(e, 0, 0)) * 0.06) - h0,
+		fbm4((pos_mundo + vec3(0, e, 0)) * 0.06) - h0,
+		fbm4((pos_mundo + vec3(0, 0, e)) * 0.06) - h0) / e;
 	vec3 wn = normalize(normal_mundo - grad * forca_bump);
 	NORMAL = normalize((VIEW_MATRIX * vec4(wn, 0.0)).xyz);
 
-	// cor por altura (com ruído quebrando as faixas)
-	float ruido = fbm(pos_mundo * 0.05);
+	// cor por altura: reusa o MESMO ruído do bump (h0) em vez de calcular
+	// outro fbm — de longe a diferença é invisível e corta ~20% do custo.
+	float ruido = h0;
 	float h = pos_mundo.y + (ruido - 0.5) * 36.0;
 	vec3 c = mix(cor_grama, cor_mato, smoothstep(-5.0, 28.0, h));
 	c = mix(c, cor_rocha, smoothstep(30.0, 60.0, h));

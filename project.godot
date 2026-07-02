@@ -106,8 +106,17 @@ usar_item={
 3d_physics/layer_2="Karts"
 3d_physics/layer_3="Itens"
 
+[physics]
+
+; Interpola a física entre os ticks (60 Hz) e a tela (120 Hz+): o movimento
+; fica liso em qualquer monitor, sem mudar o comportamento do jogo.
+common/physics_interpolation=true
+
 [rendering]
 
 anti_aliasing/quality/msaa_3d=2
 lights_and_shadows/directional_shadow/size=4096
-lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=2
+; SSAO em qualidade baixa: numa arte estilizada a diferença é imperceptível,
+; e o custo por pixel cai bastante.
+environment/ssao/quality=1

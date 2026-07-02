@@ -50,6 +50,12 @@ var _estrela_timer: float = 0.0              # estrela (rápido + imune)
 var _rodopio_timer: float = 0.0              # rodopiando (levou banana/casco)
 var _item_timer: float = 6.0                 # quando vai usar o próximo item
 var _spin_visual: float = 0.0                # giro extra do corpo no rodopio
+var _roll_visual: float = 0.0                # inclinação do corpo nas curvas
+var _frente_ant: Vector3 = Vector3.FORWARD   # frente do quadro anterior (p/ medir a curva)
+
+# Cenas dos itens já na memória (preload): sem leitura de disco no meio da corrida.
+const CENA_BANANA: PackedScene = preload("res://banana.tscn")
+const CENA_CASCO: PackedScene = preload("res://casco.tscn")
 
 @onready var motor: AudioStreamPlayer3D = get_node_or_null("MotorNPC")
 @onready var visual: Node3D = get_node_or_null("Visual")
@@ -97,11 +103,15 @@ func _physics_process(delta: float) -> void:
 	if comprimento <= 0.0:
 		return
 
-	# Temporizadores dos poderes.
+	# Temporizadores dos poderes. O relógio do raio anda SEMPRE (mesmo no
+	# rodopio), igual ao do jogador — senão banana + raio empilhados punem
+	# o rival por mais tempo do que puniriam o jogador.
 	if _boost_timer > 0.0:
 		_boost_timer -= delta
 	if _estrela_timer > 0.0:
 		_estrela_timer -= delta
+	if _raio_timer > 0.0:
+		_raio_timer -= delta
 	var rodopiando: bool = _rodopio_timer > 0.0
 	if rodopiando:
 		_rodopio_timer -= delta
@@ -114,7 +124,6 @@ func _physics_process(delta: float) -> void:
 		else:
 			var vel := _velocidade_com_elastico()
 			if _raio_timer > 0.0:
-				_raio_timer -= delta
 				vel *= 0.35                       # atingido pelo raio: bem lento
 			if _boost_timer > 0.0:
 				vel += 12.0                       # turbo
@@ -179,15 +188,14 @@ func _usar_item_ia() -> void:
 				if r != self and r.has_method("levar_raio"):
 					r.levar_raio(3.0)
 		"banana":
-			_soltar_obstaculo("res://banana.tscn", -2.6, 0.1)
+			_soltar_obstaculo(CENA_BANANA, -2.6, 0.1)
 		"casco":
 			_disparar_casco_ia()
 		_:
 			_boost_timer = maxf(_boost_timer, 2.5)
 
 
-func _soltar_obstaculo(cena_path: String, dist_frente: float, altura: float) -> void:
-	var cena := load(cena_path)
+func _soltar_obstaculo(cena: PackedScene, dist_frente: float, altura: float) -> void:
 	if cena == null:
 		return
 	var ob = cena.instantiate()   # sem tipo fixo: vamos acessar .dono dinamicamente
@@ -200,10 +208,7 @@ func _soltar_obstaculo(cena_path: String, dist_frente: float, altura: float) -> 
 
 
 func _disparar_casco_ia() -> void:
-	var cena := load("res://casco.tscn")
-	if cena == null:
-		return
-	var c = cena.instantiate()   # sem tipo fixo: vamos acessar .dono/.direcao
+	var c = CENA_CASCO.instantiate()   # sem tipo fixo: vamos acessar .dono/.direcao
 	var frente := -global_transform.basis.z
 	frente.y = 0.0
 	frente = frente.normalized()
@@ -233,6 +238,8 @@ func _seguir_pista(delta: float, vel: float) -> void:
 	if para_alvo.length() > DISTANCIA_TELEPORTE:
 		global_position = alvo
 		velocity = Vector3.ZERO
+		# Teleporte: avisa a interpolação de física para não "borrar" o salto.
+		reset_physics_interpolation()
 	else:
 		velocity = (para_alvo / delta).limit_length(vel * FATOR_VEL_MAX)
 
@@ -254,6 +261,17 @@ func _seguir_pista(delta: float, vel: float) -> void:
 			break
 
 	look_at(global_position + frente, Vector3.UP)
+
+	# Inclina o corpo (Visual) para dentro da curva, como o kart do jogador:
+	# medimos o quanto a "frente" girou desde o último quadro (curva fechada
+	# gira mais -> inclina mais). Puro visual, não muda a trajetória.
+	if visual:
+		var giro := _frente_ant.signed_angle_to(frente, Vector3.UP)
+		_frente_ant = frente
+		var frac := clampf(_vel_atual / maxf(vel_max, 0.001), 0.0, 1.0)
+		var roll_alvo := clampf(giro / maxf(delta, 0.001) * 0.10, -0.2, 0.2) * frac
+		_roll_visual = lerpf(_roll_visual, roll_alvo, clampf(6.0 * delta, 0.0, 1.0))
+		visual.rotation.z = _roll_visual
 
 
 # Gira extra o corpo (Visual) quando está rodopiando; senão volta a zero.
